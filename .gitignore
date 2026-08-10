@@ -5,11 +5,13 @@ env/
 venv/
 *.env
 
-# Python / FastAPI (Backend)
-__pycache__/
-*.py[cod]
-*$py.class
-.pytest_cache/
+# Java
+target/
+!.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+*.war
+*.ear
 
 # Node / React (Frontend)
 node_modules/
@@ -32,3 +34,8 @@ ml/data/
 # OS generated files
 .DS_Store
 Thumbs.db
+
+# IDE
+.idea/
+*.iml
+.vscode/
