@@ -8,6 +8,12 @@ import FarmerDashboard from './pages/FarmerDashboard';
 import OfficerDashboard from './pages/OfficerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import NotFound from './pages/NotFound';
+import FarmList from './components/farms/FarmList';
+import FarmCreate from './components/farms/FarmCreate';
+import AdvisoryRequests from './pages/farmer/AdvisoryRequests';
+import SoilReadingList from './components/soil/SoilReadingList';
+import SoilReadingForm from './components/soil/SoilReadingForm';
+import AdvisoryForm from './components/advisory/AdvisoryForm';
 
 function HomeRedirect() {
   const { user } = useAuth();
@@ -32,8 +38,14 @@ export default function App() {
           
           {/* Role-based protected routes */}
           <Route element={<ProtectedRoute allowedRoles={['FARMER']} />}>
-            <Route path="/farmer" element={<FarmerDashboard />} />
-            {/* nested routes for farmer features will go here */}
+            <Route path="/farmer" element={<FarmerDashboard />}>
+              <Route index element={<FarmList />} />
+              <Route path="create-farm" element={<FarmCreate />} />
+              <Route path="advisory-requests" element={<AdvisoryRequests />} />
+              <Route path="farms/:farmId/soil-readings" element={<SoilReadingList />} />
+              <Route path="farms/:farmId/soil-readings/new" element={<SoilReadingForm />} />
+              <Route path="advisory-requests/new" element={<AdvisoryForm />} />
+            </Route>
           </Route>
           <Route element={<ProtectedRoute allowedRoles={['OFFICER']} />}>
             <Route path="/officer" element={<OfficerDashboard />} />
