@@ -20,6 +20,7 @@ export default function FarmerDashboard() {
         <Link to="/farmer" className={linkClass('/farmer')}>My Farms</Link>
         <Link to="/farmer/create-farm" className={linkClass('/farmer/create-farm')}>Add Farm</Link>
         <Link to="/farmer/advisory-requests" className={linkClass('/farmer/advisory-requests')}>Advisory Requests</Link>
+        <Link to="/farmer/disease-reports" className={linkClass('/farmer/disease-reports')}>Disease Reports</Link>
       </div>
 
       {/* Render nested route components */}

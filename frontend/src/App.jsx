@@ -14,6 +14,10 @@ import AdvisoryRequests from './pages/farmer/AdvisoryRequests';
 import SoilReadingList from './components/soil/SoilReadingList';
 import SoilReadingForm from './components/soil/SoilReadingForm';
 import AdvisoryForm from './components/advisory/AdvisoryForm';
+import AdvisoryQueue from './components/officer/AdvisoryQueue';
+import DiseaseQueue from './components/officer/DiseaseQueue';
+import DiseaseReportList from './components/disease/DiseaseReportList';
+import DiseaseReportForm from './components/disease/DiseaseReportForm';
 
 function HomeRedirect() {
   const { user } = useAuth();
@@ -45,10 +49,15 @@ export default function App() {
               <Route path="farms/:farmId/soil-readings" element={<SoilReadingList />} />
               <Route path="farms/:farmId/soil-readings/new" element={<SoilReadingForm />} />
               <Route path="advisory-requests/new" element={<AdvisoryForm />} />
+              <Route path="disease-reports" element={<DiseaseReportList />} />
+              <Route path="disease-reports/new" element={<DiseaseReportForm />} />
             </Route>
           </Route>
           <Route element={<ProtectedRoute allowedRoles={['OFFICER']} />}>
-            <Route path="/officer" element={<OfficerDashboard />} />
+            <Route path="/officer" element={<OfficerDashboard />}>
+              <Route index element={<AdvisoryQueue />} />
+              <Route path="disease-reports" element={<DiseaseQueue />} />
+            </Route>
           </Route>
           <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
             <Route path="/admin" element={<AdminDashboard />} />
