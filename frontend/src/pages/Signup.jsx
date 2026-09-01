@@ -18,7 +18,17 @@ export default function Signup() {
       await signup(name, email, password, role);
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.message || 'Signup failed');
+      console.error('Signup error details:', err);
+      if (err.response) {
+        // Server responded with an error status
+        setError(err.response.data?.message || err.response.data?.error || `Server error: ${err.response.status}`);
+      } else if (err.request) {
+        // Request was made but no response received (CORS, network error, backend down)
+        setError('Cannot reach server. The backend may be starting up (this takes ~1 min on free hosting), or CORS is blocking the request. Please wait and try again.');
+      } else {
+        // Something else happened
+        setError(err.message || 'Signup failed');
+      }
     }
   };
 
