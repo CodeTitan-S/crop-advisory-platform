@@ -8,6 +8,8 @@ services:
     plan: free
     healthCheckPath: /actuator/health
     envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
       - key: FRONTEND_URL
         value: https://your-frontend.onrender.com,http://localhost:5173
       - key: JWT_SECRET
@@ -18,18 +20,10 @@ services:
         value: update
       - key: SHOW_SQL
         value: "false"
-      - key: DB_URL
+      - key: DATABASE_URL
         fromDatabase:
           name: cropadvisory-db
           property: connectionString
-      - key: DB_USER
-        fromDatabase:
-          name: cropadvisory-db
-          property: user
-      - key: DB_PASSWORD
-        fromDatabase:
-          name: cropadvisory-db
-          property: password
 
 databases:
   - name: cropadvisory-db
