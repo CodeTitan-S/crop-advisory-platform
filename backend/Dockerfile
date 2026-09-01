@@ -6,10 +6,10 @@ WORKDIR /app
 COPY mvnw pom.xml ./
 COPY .mvn .mvn
 
-# Download dependencies (cache layer)
-RUN ./mvnw dependency:go-offline -B
+# Make mvnw executable
+RUN chmod +x mvnw
 
-# Copy source and build jar
+# Copy source code and build jar directly
 COPY src ./src
 RUN ./mvnw clean package -DskipTests
 
