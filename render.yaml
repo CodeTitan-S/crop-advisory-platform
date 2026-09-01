@@ -1,16 +1,13 @@
 services:
   - type: web
     name: cropadvisory-backend
-    env: java
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
     region: oregon
     plan: free
-    rootDir: backend
-    buildCommand: ./mvnw clean package -DskipTests
-    startCommand: java -jar target/cropadvisory-0.0.1-SNAPSHOT.jar
     healthCheckPath: /actuator/health
     envVars:
-      - key: JAVA_VERSION
-        value: "17"
       - key: FRONTEND_URL
         value: https://your-frontend.onrender.com,http://localhost:5173
       - key: JWT_SECRET
@@ -39,3 +36,4 @@ databases:
     region: oregon
     plan: free
     databaseName: crop_advisory
+
