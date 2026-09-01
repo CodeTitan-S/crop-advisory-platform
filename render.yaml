@@ -1,7 +1,7 @@
 services:
   - type: web
     name: cropadvisory-backend
-    runtime: java
+    env: java
     region: oregon
     plan: free
     rootDir: backend
@@ -10,13 +10,17 @@ services:
     healthCheckPath: /actuator/health
     envVars:
       - key: JAVA_VERSION
-        value: 17
+        value: "17"
       - key: FRONTEND_URL
         value: https://your-frontend.onrender.com,http://localhost:5173
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRATION_MS
         value: "86400000"
+      - key: DDL_AUTO
+        value: update
+      - key: SHOW_SQL
+        value: "false"
       - key: DB_URL
         fromDatabase:
           name: cropadvisory-db
@@ -35,4 +39,3 @@ databases:
     region: oregon
     plan: free
     databaseName: crop_advisory
-    user: postgres
