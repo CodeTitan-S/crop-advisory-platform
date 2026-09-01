@@ -1,0 +1,12 @@
+target/
+!target/cropadvisory-0.0.1-SNAPSHOT.jar
+.mvn/wrapper/maven-wrapper.jar
+*.log
+*.tmp
+.env
+.env.local
+*.iml
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
