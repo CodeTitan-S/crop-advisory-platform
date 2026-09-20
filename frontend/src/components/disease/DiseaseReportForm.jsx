@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { submitDiseaseReport } from '../../api/diseaseService';
 import { getMyFarms } from '../../api/farmService';
+import getErrorMessage from '../../utils/errorMessage';
 
 export default function DiseaseReportForm() {
   const [farms, setFarms] = useState([]);
@@ -14,13 +15,13 @@ export default function DiseaseReportForm() {
   useEffect(() => {
     const fetchFarms = async () => {
       try {
-        const response = await getMyFarms();
-        setFarms(response.data.data);
-        if (response.data.data.length > 0) {
-          setFarmId(response.data.data[0].id.toString());
+        const myFarms = await getMyFarms();
+        setFarms(myFarms);
+        if (myFarms.length > 0) {
+          setFarmId(myFarms[0].id.toString());
         }
       } catch (err) {
-        setError('Could not load farms');
+        setError(getErrorMessage(err, 'Could not load farms'));
       }
     };
     fetchFarms();
@@ -37,7 +38,7 @@ export default function DiseaseReportForm() {
       });
       navigate('/farmer/disease-reports'); // go to list after submit
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to submit report');
+      setError(getErrorMessage(err, 'Failed to submit report'));
     }
   };
 

@@ -1,33 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { getOfficerQueue, assignRequest, respondToRequest, closeRequest } from '../../api/advisoryService';
+import useFetch from '../../hooks/useFetch';
+import getErrorMessage from '../../utils/errorMessage';
 
 export default function AdvisoryQueue() {
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { data, loading, error, refetch } = useFetch(getOfficerQueue, [], 'Failed to load queue');
   const [responseText, setResponseText] = useState({}); // id -> text
-
-  const fetchQueue = async () => {
-    try {
-      const res = await getOfficerQueue();
-      setRequests(res.data.data);
-    } catch (err) {
-      setError('Failed to load queue');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchQueue();
-  }, []);
 
   const handleAssign = async (id) => {
     try {
       await assignRequest(id);
-      fetchQueue();
+      refetch();
     } catch (err) {
-      alert(err.response?.data?.message || 'Error');
+      alert(getErrorMessage(err, 'Error'));
     }
   };
 
@@ -36,24 +21,26 @@ export default function AdvisoryQueue() {
     if (!text) return alert('Response text required');
     try {
       await respondToRequest(id, text);
-      setResponseText(prev => ({ ...prev, [id]: '' }));
-      fetchQueue();
+      setResponseText((prev) => ({ ...prev, [id]: '' }));
+      refetch();
     } catch (err) {
-      alert(err.response?.data?.message || 'Error');
+      alert(getErrorMessage(err, 'Error'));
     }
   };
 
   const handleClose = async (id) => {
     try {
       await closeRequest(id);
-      fetchQueue();
+      refetch();
     } catch (err) {
-      alert(err.response?.data?.message || 'Error');
+      alert(getErrorMessage(err, 'Error'));
     }
   };
 
   if (loading) return <p>Loading queue...</p>;
   if (error) return <p className="text-red-600">{error}</p>;
+
+  const requests = data ?? [];
 
   return (
     <div>
@@ -67,7 +54,7 @@ export default function AdvisoryQueue() {
               <div className="flex justify-between">
                 <div>
                   <p className="font-semibold">{req.questionText}</p>
-                  <p className="text-sm text-gray-600">Farm ID: {req.farm?.id} | Status: {req.status}</p>
+                  <p className="text-sm text-gray-600">Farm ID: {req.farmId} | Status: {req.status}</p>
                 </div>
                 <div className="space-x-2">
                   {req.status === 'PENDING' && (
@@ -84,7 +71,7 @@ export default function AdvisoryQueue() {
                         type="text"
                         placeholder="Response..."
                         value={responseText[req.id] || ''}
-                        onChange={(e) => setResponseText(prev => ({ ...prev, [req.id]: e.target.value }))}
+                        onChange={(e) => setResponseText((prev) => ({ ...prev, [req.id]: e.target.value }))}
                         className="border px-2 py-1 rounded"
                       />
                       <button

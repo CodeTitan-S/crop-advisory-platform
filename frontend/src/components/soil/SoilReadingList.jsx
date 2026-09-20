@@ -1,30 +1,19 @@
-import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getSoilReadings } from '../../api/soilService';
+import useFetch from '../../hooks/useFetch';
 
 export default function SoilReadingList() {
   const { farmId } = useParams();
-  const [readings, setReadings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    fetchReadings();
-  }, [farmId]);
-
-  const fetchReadings = async () => {
-    try {
-      const response = await getSoilReadings(farmId);
-      setReadings(response.data.data);
-    } catch (err) {
-      setError('Failed to load soil readings');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data, loading, error } = useFetch(
+    () => getSoilReadings(farmId),
+    [farmId],
+    'Failed to load soil readings'
+  );
 
   if (loading) return <p>Loading readings...</p>;
   if (error) return <p className="text-red-600">{error}</p>;
+
+  const readings = data ?? [];
 
   return (
     <div>

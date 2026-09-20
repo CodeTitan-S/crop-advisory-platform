@@ -16,7 +16,6 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -25,7 +24,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link SoilReadingService}.
- * Tests logging, listing, and latest-reading retrieval.
+ * Tests logging and listing of soil readings.
  */
 @ExtendWith(MockitoExtension.class)
 class SoilReadingServiceTest {
@@ -117,32 +116,5 @@ class SoilReadingServiceTest {
         List<SoilReading> result = soilReadingService.getReadingsByFarm(farm);
 
         assertTrue(result.isEmpty());
-    }
-
-    // ─── getLatestReading ───────────────────────────────────────────────
-
-    /** Happy path: returns the most recent reading for the farm. */
-    @Test
-    @DisplayName("getLatestReading – success: returns most recent reading")
-    void getLatestReading_success() {
-        when(soilReadingRepository.findFirstByFarmOrderByRecordedAtDesc(farm))
-                .thenReturn(Optional.of(sampleReading));
-
-        SoilReading result = soilReadingService.getLatestReading(farm);
-
-        assertNotNull(result);
-        assertEquals(sampleReading.getId(), result.getId());
-    }
-
-    /** Edge case: no readings exist for the farm – returns null. */
-    @Test
-    @DisplayName("getLatestReading – edge: no readings returns null")
-    void getLatestReading_noReadings() {
-        when(soilReadingRepository.findFirstByFarmOrderByRecordedAtDesc(farm))
-                .thenReturn(Optional.empty());
-
-        SoilReading result = soilReadingService.getLatestReading(farm);
-
-        assertNull(result);
     }
 }

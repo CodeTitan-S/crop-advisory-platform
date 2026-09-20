@@ -5,7 +5,7 @@ import com.college.cropadvisory.dto.SoilReadingRequest;
 import com.college.cropadvisory.model.entity.Farm;
 import com.college.cropadvisory.model.entity.SoilReading;
 import com.college.cropadvisory.model.entity.User;
-import com.college.cropadvisory.repository.FarmRepository;
+import com.college.cropadvisory.service.FarmService;
 import com.college.cropadvisory.service.SoilReadingService;
 import com.college.cropadvisory.service.UserService;
 import jakarta.validation.Valid;
@@ -22,14 +22,14 @@ import java.util.List;
 public class SoilReadingController {
 
     private final SoilReadingService soilReadingService;
-    private final FarmRepository farmRepository;
+    private final FarmService farmService;
     private final UserService userService;
 
     public SoilReadingController(SoilReadingService soilReadingService,
-                                 FarmRepository farmRepository,
+                                 FarmService farmService,
                                  UserService userService) {
         this.soilReadingService = soilReadingService;
-        this.farmRepository = farmRepository;
+        this.farmService = farmService;
         this.userService = userService;
     }
 
@@ -40,11 +40,7 @@ public class SoilReadingController {
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody SoilReadingRequest request) {
         User farmer = userService.getUserByEmail(userDetails.getUsername());
-        Farm farm = farmRepository.findById(farmId)
-                .orElseThrow(() -> new RuntimeException("Farm not found"));
-        if (!farm.getUser().getId().equals(farmer.getId())) {
-            throw new RuntimeException("Access denied");
-        }
+        Farm farm = farmService.getFarmOwnedBy(farmId, farmer);
         SoilReading reading = soilReadingService.logReading(farm, request);
         return ResponseEntity.ok(new ApiResponse<>(true, "Soil reading logged", reading));
     }
@@ -52,11 +48,9 @@ public class SoilReadingController {
     @GetMapping
     @PreAuthorize("hasRole('FARMER') or hasRole('OFFICER')")
     public ResponseEntity<ApiResponse<List<SoilReading>>> getReadings(
-            @PathVariable Long farmId,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        Farm farm = farmRepository.findById(farmId)
-                .orElseThrow(() -> new RuntimeException("Farm not found"));
-        // simple check: farmer owns farm, or officer can view
+            @PathVariable Long farmId) {
+        // Farmers can read their own farm; officers can read any farm.
+        Farm farm = farmService.getFarm(farmId);
         List<SoilReading> readings = soilReadingService.getReadingsByFarm(farm);
         return ResponseEntity.ok(new ApiResponse<>(true, "Readings fetched", readings));
     }

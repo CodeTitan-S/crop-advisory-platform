@@ -1,7 +1,7 @@
-import api from './axios';
+import api, { unwrap } from './axios';
 
 export const getSoilReadings = (farmId) =>
-  api.get(`/farms/${farmId}/soil-readings`);
+  unwrap(api.get(`/farms/${farmId}/soil-readings`));
 
 export const logSoilReading = (farmId, readingData) =>
-  api.post(`/farms/${farmId}/soil-readings`, readingData);
+  unwrap(api.post(`/farms/${farmId}/soil-readings`, readingData));

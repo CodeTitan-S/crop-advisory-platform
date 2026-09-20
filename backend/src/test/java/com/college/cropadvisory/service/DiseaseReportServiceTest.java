@@ -1,9 +1,10 @@
 package com.college.cropadvisory.service;
 
 import com.college.cropadvisory.dto.DiseaseReportRequest;
+import com.college.cropadvisory.exception.ForbiddenException;
+import com.college.cropadvisory.exception.NotFoundException;
 import com.college.cropadvisory.model.entity.*;
 import com.college.cropadvisory.repository.DiseaseReportRepository;
-import com.college.cropadvisory.repository.FarmRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,9 @@ import static org.mockito.Mockito.*;
  * Unit tests for {@link DiseaseReportService}.
  * Covers the lifecycle: submit → review → resolve,
  * plus authorization and status-transition guard tests.
+ *
+ * Farm loading/ownership now lives in {@link FarmService}, so those are stubbed here and
+ * verified in {@link FarmServiceTest}.
  */
 @ExtendWith(MockitoExtension.class)
 class DiseaseReportServiceTest {
@@ -33,7 +37,7 @@ class DiseaseReportServiceTest {
     private DiseaseReportRepository diseaseReportRepository;
 
     @Mock
-    private FarmRepository farmRepository;
+    private FarmService farmService;
 
     @InjectMocks
     private DiseaseReportService diseaseReportService;
@@ -101,7 +105,7 @@ class DiseaseReportServiceTest {
     @Test
     @DisplayName("submitReport – success: creates report with REPORTED status")
     void submitReport_success() {
-        when(farmRepository.findById(10L)).thenReturn(Optional.of(farm));
+        when(farmService.getFarmOwnedBy(10L, farmer)).thenReturn(farm);
         when(diseaseReportRepository.save(any(DiseaseReport.class))).thenReturn(reportedReport);
 
         DiseaseReport result = diseaseReportService.submitReport(farmer, reportRequest);
@@ -113,24 +117,27 @@ class DiseaseReportServiceTest {
         verify(diseaseReportRepository).save(any(DiseaseReport.class));
     }
 
-    /** Fail: farm not found. */
+    /** Fail: farm not found propagates from FarmService. */
     @Test
     @DisplayName("submitReport – fail: farm not found")
     void submitReport_farmNotFound() {
         reportRequest.setFarmId(999L);
-        when(farmRepository.findById(999L)).thenReturn(Optional.empty());
+        when(farmService.getFarmOwnedBy(999L, farmer))
+                .thenThrow(new NotFoundException("Farm not found"));
 
         RuntimeException ex = assertThrows(RuntimeException.class,
                 () -> diseaseReportService.submitReport(farmer, reportRequest));
 
         assertEquals("Farm not found", ex.getMessage());
+        verify(diseaseReportRepository, never()).save(any());
     }
 
     /** Fail: farmer does not own the farm. */
     @Test
     @DisplayName("submitReport – fail: not the farm owner")
     void submitReport_notOwner() {
-        when(farmRepository.findById(10L)).thenReturn(Optional.of(farm));
+        when(farmService.getFarmOwnedBy(10L, otherFarmer))
+                .thenThrow(new ForbiddenException("Not your farm"));
 
         RuntimeException ex = assertThrows(RuntimeException.class,
                 () -> diseaseReportService.submitReport(otherFarmer, reportRequest));

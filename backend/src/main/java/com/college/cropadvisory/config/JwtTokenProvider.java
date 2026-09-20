@@ -1,6 +1,7 @@
 package com.college.cropadvisory.config;
 
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -33,30 +34,17 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    public String getEmailFromToken(String token) {
+    /**
+     * Verifies the token signature and returns its claims.
+     * Parsing once lets callers read the subject and role without re-verifying.
+     *
+     * @throws io.jsonwebtoken.JwtException if the token is invalid or expired
+     */
+    public Claims parseClaims(String token) {
         return Jwts.parser()
                 .verifyWith(key)
                 .build()
                 .parseSignedClaims(token)
-                .getPayload()
-                .getSubject();
-    }
-
-    public String getRoleFromToken(String token) {
-        return Jwts.parser()
-                .verifyWith(key)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload()
-                .get("role", String.class);
-    }
-
-    public boolean validateToken(String token) {
-        try {
-            Jwts.parser().verifyWith(key).build().parseSignedClaims(token);
-            return true;
-        } catch (JwtException | IllegalArgumentException e) {
-            return false;
-        }
+                .getPayload();
     }
 }

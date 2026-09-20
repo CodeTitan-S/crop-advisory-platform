@@ -1,39 +1,15 @@
-import { useEffect, useState } from 'react';
-import { getMyRequests } from '../../api/advisoryService';
 import { Link } from 'react-router-dom';
+import { getMyRequests } from '../../api/advisoryService';
+import useFetch from '../../hooks/useFetch';
+import StatusBadge from '../../components/StatusBadge';
 
 export default function AdvisoryRequests() {
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    fetchRequests();
-  }, []);
-
-  const fetchRequests = async () => {
-    try {
-      const response = await getMyRequests();
-      setRequests(response.data.data);
-    } catch (err) {
-      setError('Failed to load requests');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data, loading, error } = useFetch(getMyRequests, [], 'Failed to load requests');
 
   if (loading) return <p>Loading requests...</p>;
   if (error) return <p className="text-red-600">{error}</p>;
 
-  const statusColor = (status) => {
-    switch (status) {
-      case 'PENDING': return 'bg-yellow-100 text-yellow-800';
-      case 'ASSIGNED': return 'bg-blue-100 text-blue-800';
-      case 'RESPONDED': return 'bg-green-100 text-green-800';
-      case 'CLOSED': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100';
-    }
-  };
+  const requests = data ?? [];
 
   return (
     <div>
@@ -59,9 +35,7 @@ export default function AdvisoryRequests() {
                     Asked on {new Date(req.createdAt).toLocaleDateString()}
                   </p>
                 </div>
-                <span className={`px-2 py-1 rounded text-xs font-medium ${statusColor(req.status)}`}>
-                  {req.status}
-                </span>
+                <StatusBadge status={req.status} />
               </div>
               {req.responseText && (
                 <div className="mt-2 p-2 bg-green-50 rounded">

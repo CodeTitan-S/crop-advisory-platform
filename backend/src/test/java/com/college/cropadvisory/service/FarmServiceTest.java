@@ -1,6 +1,8 @@
 package com.college.cropadvisory.service;
 
 import com.college.cropadvisory.dto.FarmRequest;
+import com.college.cropadvisory.exception.ForbiddenException;
+import com.college.cropadvisory.exception.NotFoundException;
 import com.college.cropadvisory.model.entity.Farm;
 import com.college.cropadvisory.model.entity.Role;
 import com.college.cropadvisory.model.entity.User;
@@ -16,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -24,7 +27,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link FarmService}.
- * Tests farm creation and retrieval by user.
+ * Tests farm creation, retrieval by user, and ownership authorization.
  */
 @ExtendWith(MockitoExtension.class)
 class FarmServiceTest {
@@ -36,6 +39,7 @@ class FarmServiceTest {
     private FarmService farmService;
 
     private User farmer;
+    private User otherFarmer;
     private FarmRequest farmRequest;
     private Farm sampleFarm;
 
@@ -46,6 +50,12 @@ class FarmServiceTest {
         farmer.setName("Jane Farmer");
         farmer.setEmail("jane@example.com");
         farmer.setRole(Role.FARMER);
+
+        otherFarmer = new User();
+        otherFarmer.setId(2L);
+        otherFarmer.setName("Eve Farmer");
+        otherFarmer.setEmail("eve@example.com");
+        otherFarmer.setRole(Role.FARMER);
 
         farmRequest = new FarmRequest();
         farmRequest.setLocation("North Valley");
@@ -108,5 +118,67 @@ class FarmServiceTest {
         List<Farm> result = farmService.getFarmsByUser(farmer);
 
         assertTrue(result.isEmpty());
+    }
+
+    // ─── getFarm ────────────────────────────────────────────────────────
+
+    /** Happy path: existing farm is returned. */
+    @Test
+    @DisplayName("getFarm – success: returns existing farm")
+    void getFarm_success() {
+        when(farmRepository.findById(10L)).thenReturn(Optional.of(sampleFarm));
+
+        Farm result = farmService.getFarm(10L);
+
+        assertEquals(sampleFarm, result);
+    }
+
+    /** Fail: unknown farm id. */
+    @Test
+    @DisplayName("getFarm – fail: farm not found")
+    void getFarm_notFound() {
+        when(farmRepository.findById(999L)).thenReturn(Optional.empty());
+
+        NotFoundException ex = assertThrows(NotFoundException.class,
+                () -> farmService.getFarm(999L));
+
+        assertEquals("Farm not found", ex.getMessage());
+    }
+
+    // ─── getFarmOwnedBy ─────────────────────────────────────────────────
+
+    /** Happy path: owner can access their farm. */
+    @Test
+    @DisplayName("getFarmOwnedBy – success: owner can access farm")
+    void getFarmOwnedBy_success() {
+        when(farmRepository.findById(10L)).thenReturn(Optional.of(sampleFarm));
+
+        Farm result = farmService.getFarmOwnedBy(10L, farmer);
+
+        assertEquals(sampleFarm, result);
+    }
+
+    /** Fail: a different user cannot access the farm. */
+    @Test
+    @DisplayName("getFarmOwnedBy – fail: non-owner is forbidden")
+    void getFarmOwnedBy_notOwner() {
+        when(farmRepository.findById(10L)).thenReturn(Optional.of(sampleFarm));
+
+        ForbiddenException ex = assertThrows(ForbiddenException.class,
+                () -> farmService.getFarmOwnedBy(10L, otherFarmer));
+
+        assertEquals("Not your farm", ex.getMessage());
+    }
+
+    /** Fail: unknown farm id. */
+    @Test
+    @DisplayName("getFarmOwnedBy – fail: farm not found")
+    void getFarmOwnedBy_notFound() {
+        when(farmRepository.findById(999L)).thenReturn(Optional.empty());
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> farmService.getFarmOwnedBy(999L, farmer));
+
+        assertEquals("Farm not found", ex.getMessage());
     }
 }

@@ -1,6 +1,7 @@
 package com.college.cropadvisory.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -27,9 +28,6 @@ public class AdvisoryRequest {
     private AdvisoryStatus status = AdvisoryStatus.PENDING;
 
     @Column(columnDefinition = "TEXT")
-    private String aiSuggestion; // nullable (for Phase 3 AI enhancement)
-
-    @Column(columnDefinition = "TEXT")
     private String responseText; // officer's reply (added for the workflow)
 
     @Column(nullable = false)
@@ -51,4 +49,13 @@ public class AdvisoryRequest {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "farm_id", nullable = false)
     private Farm farm;
+
+    /**
+     * Exposes just the farm id. The {@code farm} association itself is {@code @JsonIgnore}d,
+     * so clients would otherwise have no way to reference the farm.
+     */
+    @JsonProperty("farmId")
+    public Long getFarmId() {
+        return farm != null ? farm.getId() : null;
+    }
 }

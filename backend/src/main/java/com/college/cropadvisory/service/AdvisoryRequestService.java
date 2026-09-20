@@ -1,8 +1,10 @@
 package com.college.cropadvisory.service;
 
+import com.college.cropadvisory.exception.ConflictException;
+import com.college.cropadvisory.exception.ForbiddenException;
+import com.college.cropadvisory.exception.NotFoundException;
 import com.college.cropadvisory.model.entity.*;
 import com.college.cropadvisory.repository.AdvisoryRequestRepository;
-import com.college.cropadvisory.repository.FarmRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -12,20 +14,16 @@ import java.util.List;
 public class AdvisoryRequestService {
 
     private final AdvisoryRequestRepository advisoryRequestRepository;
-    private final FarmRepository farmRepository;
+    private final FarmService farmService;
 
     public AdvisoryRequestService(AdvisoryRequestRepository advisoryRequestRepository,
-                                  FarmRepository farmRepository) {
+                                  FarmService farmService) {
         this.advisoryRequestRepository = advisoryRequestRepository;
-        this.farmRepository = farmRepository;
+        this.farmService = farmService;
     }
 
     public AdvisoryRequest submitRequest(User farmer, Long farmId, String question) {
-        Farm farm = farmRepository.findById(farmId)
-                .orElseThrow(() -> new RuntimeException("Farm not found"));
-        if (!farm.getUser().getId().equals(farmer.getId())) {
-            throw new RuntimeException("Not your farm");
-        }
+        Farm farm = farmService.getFarmOwnedBy(farmId, farmer);
         AdvisoryRequest request = new AdvisoryRequest();
         request.setFarmer(farmer);
         request.setFarm(farm);
@@ -44,10 +42,9 @@ public class AdvisoryRequestService {
     }
 
     public AdvisoryRequest assignToOfficer(Long requestId, User officer) {
-        AdvisoryRequest req = advisoryRequestRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("Request not found"));
+        AdvisoryRequest req = getRequest(requestId);
         if (req.getStatus() != AdvisoryStatus.PENDING) {
-            throw new RuntimeException("Request is not in PENDING status");
+            throw new ConflictException("Request is not in PENDING status");
         }
         req.setOfficer(officer);
         req.setStatus(AdvisoryStatus.ASSIGNED);
@@ -55,13 +52,10 @@ public class AdvisoryRequestService {
     }
 
     public AdvisoryRequest respondToRequest(Long requestId, User officer, String responseText) {
-        AdvisoryRequest req = advisoryRequestRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("Request not found"));
-        if (req.getOfficer() == null || !req.getOfficer().getId().equals(officer.getId())) {
-            throw new RuntimeException("Not assigned to you");
-        }
+        AdvisoryRequest req = getRequest(requestId);
+        requireAssignedTo(req, officer);
         if (req.getStatus() != AdvisoryStatus.ASSIGNED) {
-            throw new RuntimeException("Request must be in ASSIGNED status");
+            throw new ConflictException("Request must be in ASSIGNED status");
         }
         req.setResponseText(responseText);
         req.setStatus(AdvisoryStatus.RESPONDED);
@@ -70,18 +64,28 @@ public class AdvisoryRequestService {
     }
 
     public AdvisoryRequest closeRequest(Long requestId, User user) {
-        AdvisoryRequest req = advisoryRequestRepository.findById(requestId)
-                .orElseThrow(() -> new RuntimeException("Request not found"));
-        // Only assigned officer or admin can close
+        AdvisoryRequest req = getRequest(requestId);
+        // Only the assigned officer or an admin can close
         boolean isAssignedOfficer = req.getOfficer() != null && req.getOfficer().getId().equals(user.getId());
-        boolean isAdmin = user.getRole().equals(Role.ADMIN);
+        boolean isAdmin = user.getRole() == Role.ADMIN;
         if (!isAssignedOfficer && !isAdmin) {
-            throw new RuntimeException("Not authorized to close this request");
+            throw new ForbiddenException("Not authorized to close this request");
         }
         if (req.getStatus() != AdvisoryStatus.RESPONDED) {
-            throw new RuntimeException("Request must be RESPONDED before closing");
+            throw new ConflictException("Request must be RESPONDED before closing");
         }
         req.setStatus(AdvisoryStatus.CLOSED);
         return advisoryRequestRepository.save(req);
+    }
+
+    private AdvisoryRequest getRequest(Long requestId) {
+        return advisoryRequestRepository.findById(requestId)
+                .orElseThrow(() -> new NotFoundException("Request not found"));
+    }
+
+    private void requireAssignedTo(AdvisoryRequest req, User officer) {
+        if (req.getOfficer() == null || !req.getOfficer().getId().equals(officer.getId())) {
+            throw new ForbiddenException("Not assigned to you");
+        }
     }
 }

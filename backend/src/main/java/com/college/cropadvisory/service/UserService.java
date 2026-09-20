@@ -3,12 +3,13 @@ package com.college.cropadvisory.service;
 import com.college.cropadvisory.config.JwtTokenProvider;
 import com.college.cropadvisory.dto.LoginRequest;
 import com.college.cropadvisory.dto.SignupRequest;
+import com.college.cropadvisory.exception.ConflictException;
+import com.college.cropadvisory.exception.NotFoundException;
 import com.college.cropadvisory.model.entity.Role;
 import com.college.cropadvisory.model.entity.User;
 import com.college.cropadvisory.repository.UserRepository;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -32,7 +33,7 @@ public class UserService {
 
     public User registerUser(SignupRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already registered");
+            throw new ConflictException("Email already registered");
         }
 
         User user = new User();
@@ -44,16 +45,15 @@ public class UserService {
     }
 
     public String authenticateUser(LoginRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
+        authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = getUserByEmail(request.getEmail());
         return tokenProvider.generateToken(user.getEmail(), user.getRole().name());
     }
 
     public User getUserByEmail(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
     }
 }

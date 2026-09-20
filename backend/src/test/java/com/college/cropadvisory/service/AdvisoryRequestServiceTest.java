@@ -1,8 +1,9 @@
 package com.college.cropadvisory.service;
 
+import com.college.cropadvisory.exception.ForbiddenException;
+import com.college.cropadvisory.exception.NotFoundException;
 import com.college.cropadvisory.model.entity.*;
 import com.college.cropadvisory.repository.AdvisoryRequestRepository;
-import com.college.cropadvisory.repository.FarmRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,9 @@ import static org.mockito.Mockito.*;
  * Unit tests for {@link AdvisoryRequestService}.
  * Covers the full lifecycle: submit → assign → respond → close,
  * plus authorization and status-transition guard tests.
+ *
+ * Farm loading/ownership now lives in {@link FarmService}, so those are stubbed here and
+ * verified in {@link FarmServiceTest}.
  */
 @ExtendWith(MockitoExtension.class)
 class AdvisoryRequestServiceTest {
@@ -32,7 +36,7 @@ class AdvisoryRequestServiceTest {
     private AdvisoryRequestRepository advisoryRequestRepository;
 
     @Mock
-    private FarmRepository farmRepository;
+    private FarmService farmService;
 
     @InjectMocks
     private AdvisoryRequestService advisoryRequestService;
@@ -112,7 +116,7 @@ class AdvisoryRequestServiceTest {
     @Test
     @DisplayName("submitRequest – success: creates PENDING request for farmer's farm")
     void submitRequest_success() {
-        when(farmRepository.findById(10L)).thenReturn(Optional.of(farm));
+        when(farmService.getFarmOwnedBy(10L, farmer)).thenReturn(farm);
         when(advisoryRequestRepository.save(any(AdvisoryRequest.class))).thenReturn(pendingRequest);
 
         AdvisoryRequest result = advisoryRequestService.submitRequest(farmer, 10L, "What crop suits loamy soil?");
@@ -123,23 +127,26 @@ class AdvisoryRequestServiceTest {
         verify(advisoryRequestRepository).save(any(AdvisoryRequest.class));
     }
 
-    /** Fail: farm not found throws RuntimeException. */
+    /** Fail: farm not found propagates from FarmService. */
     @Test
     @DisplayName("submitRequest – fail: farm not found")
     void submitRequest_farmNotFound() {
-        when(farmRepository.findById(999L)).thenReturn(Optional.empty());
+        when(farmService.getFarmOwnedBy(999L, farmer))
+                .thenThrow(new NotFoundException("Farm not found"));
 
         RuntimeException ex = assertThrows(RuntimeException.class,
                 () -> advisoryRequestService.submitRequest(farmer, 999L, "Question"));
 
         assertEquals("Farm not found", ex.getMessage());
+        verify(advisoryRequestRepository, never()).save(any());
     }
 
     /** Fail: farmer tries to submit for another farmer's farm. */
     @Test
     @DisplayName("submitRequest – fail: not the farm owner")
     void submitRequest_notOwner() {
-        when(farmRepository.findById(10L)).thenReturn(Optional.of(farm));
+        when(farmService.getFarmOwnedBy(10L, otherFarmer))
+                .thenThrow(new ForbiddenException("Not your farm"));
 
         RuntimeException ex = assertThrows(RuntimeException.class,
                 () -> advisoryRequestService.submitRequest(otherFarmer, 10L, "Question"));

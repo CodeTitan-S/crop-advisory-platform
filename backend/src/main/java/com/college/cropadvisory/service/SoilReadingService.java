@@ -34,9 +34,4 @@ public class SoilReadingService {
     public List<SoilReading> getReadingsByFarm(Farm farm) {
         return soilReadingRepository.findByFarmOrderByRecordedAtDesc(farm);
     }
-
-    public SoilReading getLatestReading(Farm farm) {
-        return soilReadingRepository.findFirstByFarmOrderByRecordedAtDesc(farm)
-                .orElse(null);
-    }
 }

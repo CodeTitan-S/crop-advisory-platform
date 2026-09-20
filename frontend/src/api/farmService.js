@@ -1,5 +1,5 @@
-import api from './axios';
+import api, { unwrap } from './axios';
 
-export const getMyFarms = () => api.get('/farms');
+export const getMyFarms = () => unwrap(api.get('/farms'));
 
-export const createFarm = (farmData) => api.post('/farms', farmData);
+export const createFarm = (farmData) => unwrap(api.post('/farms', farmData));

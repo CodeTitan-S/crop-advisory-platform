@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { submitAdvisoryRequest } from '../../api/advisoryService';
 import { getMyFarms } from '../../api/farmService';
+import getErrorMessage from '../../utils/errorMessage';
 
 export default function AdvisoryForm() {
   const [farms, setFarms] = useState([]);
@@ -13,13 +14,13 @@ export default function AdvisoryForm() {
   useEffect(() => {
     const fetchFarms = async () => {
       try {
-        const response = await getMyFarms();
-        setFarms(response.data.data);
-        if (response.data.data.length > 0) {
-          setFarmId(response.data.data[0].id.toString());
+        const myFarms = await getMyFarms();
+        setFarms(myFarms);
+        if (myFarms.length > 0) {
+          setFarmId(myFarms[0].id.toString());
         }
       } catch (err) {
-        setError('Could not load farms');
+        setError(getErrorMessage(err, 'Could not load farms'));
       }
     };
     fetchFarms();
@@ -35,7 +36,7 @@ export default function AdvisoryForm() {
       });
       navigate('/farmer/advisory-requests');
     } catch (err) {
-      setError(err.response?.data?.message || 'Submission failed');
+      setError(getErrorMessage(err, 'Submission failed'));
     }
   };
 

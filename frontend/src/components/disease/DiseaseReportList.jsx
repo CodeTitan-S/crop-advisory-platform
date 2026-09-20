@@ -1,38 +1,15 @@
-import { useEffect, useState } from 'react';
-import { getMyReports } from '../../api/diseaseService';
 import { Link } from 'react-router-dom';
+import { getMyReports } from '../../api/diseaseService';
+import useFetch from '../../hooks/useFetch';
+import StatusBadge from '../StatusBadge';
 
 export default function DiseaseReportList() {
-  const [reports, setReports] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    fetchReports();
-  }, []);
-
-  const fetchReports = async () => {
-    try {
-      const response = await getMyReports();
-      setReports(response.data.data);
-    } catch (err) {
-      setError('Failed to load disease reports');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const statusColor = (status) => {
-    switch (status) {
-      case 'REPORTED': return 'bg-yellow-100 text-yellow-800';
-      case 'UNDER_REVIEW': return 'bg-blue-100 text-blue-800';
-      case 'RESOLVED': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100';
-    }
-  };
+  const { data, loading, error } = useFetch(getMyReports, [], 'Failed to load disease reports');
 
   if (loading) return <p>Loading reports...</p>;
   if (error) return <p className="text-red-600">{error}</p>;
+
+  const reports = data ?? [];
 
   return (
     <div>
@@ -58,9 +35,7 @@ export default function DiseaseReportList() {
                     Reported on {new Date(report.createdAt).toLocaleDateString()}
                   </p>
                 </div>
-                <span className={`px-2 py-1 rounded text-xs font-medium ${statusColor(report.status)}`}>
-                  {report.status}
-                </span>
+                <StatusBadge status={report.status} />
               </div>
               {report.imageUrl && (
                 <img src={report.imageUrl} alt="disease" className="w-32 h-32 object-cover mt-2" />

@@ -19,22 +19,21 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (email, password) => {
-    const response = await api.post('/auth/login', { email, password });
-    const { token, email: userEmail, role } = response.data;
-    const userData = { email: userEmail, role };
-    localStorage.setItem('token', token);
+  const persistSession = (authResponse) => {
+    const userData = { email: authResponse.email, role: authResponse.role };
+    localStorage.setItem('token', authResponse.token);
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
   };
 
+  const login = async (email, password) => {
+    const { data } = await api.post('/auth/login', { email, password });
+    persistSession(data);
+  };
+
   const signup = async (name, email, password, role) => {
-    const response = await api.post('/auth/signup', { name, email, password, role });
-    const { token, email: userEmail, role: userRole } = response.data;
-    const userData = { email: userEmail, role: userRole };
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userData));
-    setUser(userData);
+    const { data } = await api.post('/auth/signup', { name, email, password, role });
+    persistSession(data);
   };
 
   const logout = () => {

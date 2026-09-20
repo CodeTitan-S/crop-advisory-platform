@@ -1,16 +1,16 @@
-import api from './axios';
+import api, { unwrap } from './axios';
 
 export const submitDiseaseReport = (data) =>
-  api.post('/disease-reports', data);
+  unwrap(api.post('/disease-reports', data));
 
 export const getMyReports = () =>
-  api.get('/disease-reports/my-reports');
+  unwrap(api.get('/disease-reports/my-reports'));
 
 export const getOfficerDiseaseQueue = () =>
-  api.get('/disease-reports/queue');
+  unwrap(api.get('/disease-reports/queue'));
 
 export const reviewReport = (id) =>
-  api.put(`/disease-reports/${id}/review`);
+  unwrap(api.put(`/disease-reports/${id}/review`));
 
 export const resolveReport = (id, resolutionNotes) =>
-  api.put(`/disease-reports/${id}/resolve`, { resolutionNotes });
+  unwrap(api.put(`/disease-reports/${id}/resolve`, { resolutionNotes }));

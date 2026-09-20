@@ -1,4 +1,3 @@
-// AdvisoryRequestRepository.java
 package com.college.cropadvisory.repository;
 
 import com.college.cropadvisory.model.entity.AdvisoryRequest;

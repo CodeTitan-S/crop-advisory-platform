@@ -1,9 +1,11 @@
 package com.college.cropadvisory.service;
 
 import com.college.cropadvisory.dto.DiseaseReportRequest;
+import com.college.cropadvisory.exception.ConflictException;
+import com.college.cropadvisory.exception.ForbiddenException;
+import com.college.cropadvisory.exception.NotFoundException;
 import com.college.cropadvisory.model.entity.*;
 import com.college.cropadvisory.repository.DiseaseReportRepository;
-import com.college.cropadvisory.repository.FarmRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -13,20 +15,16 @@ import java.util.List;
 public class DiseaseReportService {
 
     private final DiseaseReportRepository diseaseReportRepository;
-    private final FarmRepository farmRepository;
+    private final FarmService farmService;
 
     public DiseaseReportService(DiseaseReportRepository diseaseReportRepository,
-                                FarmRepository farmRepository) {
+                                FarmService farmService) {
         this.diseaseReportRepository = diseaseReportRepository;
-        this.farmRepository = farmRepository;
+        this.farmService = farmService;
     }
 
     public DiseaseReport submitReport(User farmer, DiseaseReportRequest request) {
-        Farm farm = farmRepository.findById(request.getFarmId())
-                .orElseThrow(() -> new RuntimeException("Farm not found"));
-        if (!farm.getUser().getId().equals(farmer.getId())) {
-            throw new RuntimeException("Not your farm");
-        }
+        Farm farm = farmService.getFarmOwnedBy(request.getFarmId(), farmer);
         DiseaseReport report = new DiseaseReport();
         report.setFarmer(farmer);
         report.setFarm(farm);
@@ -45,10 +43,9 @@ public class DiseaseReportService {
     }
 
     public DiseaseReport reviewReport(Long reportId, User officer) {
-        DiseaseReport report = diseaseReportRepository.findById(reportId)
-                .orElseThrow(() -> new RuntimeException("Report not found"));
+        DiseaseReport report = getReport(reportId);
         if (report.getStatus() != DiseaseStatus.REPORTED) {
-            throw new RuntimeException("Report is not REPORTED");
+            throw new ConflictException("Report is not REPORTED");
         }
         report.setOfficer(officer);
         report.setStatus(DiseaseStatus.UNDER_REVIEW);
@@ -56,17 +53,21 @@ public class DiseaseReportService {
     }
 
     public DiseaseReport resolveReport(Long reportId, User officer, String resolutionNotes) {
-        DiseaseReport report = diseaseReportRepository.findById(reportId)
-                .orElseThrow(() -> new RuntimeException("Report not found"));
-        if (!report.getOfficer().getId().equals(officer.getId())) {
-            throw new RuntimeException("Not assigned to you");
+        DiseaseReport report = getReport(reportId);
+        if (report.getOfficer() == null || !report.getOfficer().getId().equals(officer.getId())) {
+            throw new ForbiddenException("Not assigned to you");
         }
         if (report.getStatus() != DiseaseStatus.UNDER_REVIEW) {
-            throw new RuntimeException("Report must be UNDER_REVIEW");
+            throw new ConflictException("Report must be UNDER_REVIEW");
         }
         report.setStatus(DiseaseStatus.RESOLVED);
         report.setResolutionNotes(resolutionNotes);
         report.setResolvedAt(LocalDateTime.now());
         return diseaseReportRepository.save(report);
+    }
+
+    private DiseaseReport getReport(Long reportId) {
+        return diseaseReportRepository.findById(reportId)
+                .orElseThrow(() -> new NotFoundException("Report not found"));
     }
 }

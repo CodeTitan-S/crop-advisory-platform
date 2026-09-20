@@ -2,6 +2,7 @@ package com.college.cropadvisory.controller;
 
 import com.college.cropadvisory.dto.AdvisoryRequestRequest;
 import com.college.cropadvisory.dto.ApiResponse;
+import com.college.cropadvisory.exception.BadRequestException;
 import com.college.cropadvisory.model.entity.AdvisoryRequest;
 import com.college.cropadvisory.model.entity.User;
 import com.college.cropadvisory.service.AdvisoryRequestService;
@@ -77,7 +78,7 @@ public class AdvisoryRequestController {
         User officer = userService.getUserByEmail(userDetails.getUsername());
         String responseText = body.get("responseText");
         if (responseText == null || responseText.isBlank()) {
-            throw new RuntimeException("responseText is required");
+            throw new BadRequestException("responseText is required");
         }
         AdvisoryRequest updated = advisoryRequestService.respondToRequest(id, officer, responseText);
         return ResponseEntity.ok(new ApiResponse<>(true, "Response submitted", updated));

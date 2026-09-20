@@ -1,31 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { getOfficerDiseaseQueue, reviewReport, resolveReport } from '../../api/diseaseService';
+import useFetch from '../../hooks/useFetch';
+import getErrorMessage from '../../utils/errorMessage';
 
 export default function DiseaseQueue() {
-  const [reports, setReports] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { data, loading, error, refetch } = useFetch(
+    getOfficerDiseaseQueue,
+    [],
+    'Failed to load reports'
+  );
   const [resolution, setResolution] = useState({}); // id -> text
-
-  const fetchQueue = async () => {
-    try {
-      const res = await getOfficerDiseaseQueue();
-      setReports(res.data.data);
-    } catch (err) {
-      setError('Failed to load reports');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { fetchQueue(); }, []);
 
   const handleReview = async (id) => {
     try {
       await reviewReport(id);
-      fetchQueue();
+      refetch();
     } catch (err) {
-      alert(err.response?.data?.message || 'Error');
+      alert(getErrorMessage(err, 'Error'));
     }
   };
 
@@ -34,15 +25,17 @@ export default function DiseaseQueue() {
     if (!notes) return alert('Resolution notes required');
     try {
       await resolveReport(id, notes);
-      setResolution(prev => ({ ...prev, [id]: '' }));
-      fetchQueue();
+      setResolution((prev) => ({ ...prev, [id]: '' }));
+      refetch();
     } catch (err) {
-      alert(err.response?.data?.message || 'Error');
+      alert(getErrorMessage(err, 'Error'));
     }
   };
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p className="text-red-600">{error}</p>;
+
+  const reports = data ?? [];
 
   return (
     <div>
@@ -68,7 +61,7 @@ export default function DiseaseQueue() {
                       type="text"
                       placeholder="Resolution notes..."
                       value={resolution[r.id] || ''}
-                      onChange={(e) => setResolution(prev => ({ ...prev, [r.id]: e.target.value }))}
+                      onChange={(e) => setResolution((prev) => ({ ...prev, [r.id]: e.target.value }))}
                       className="border px-2 py-1 rounded"
                     />
                     <button onClick={() => handleResolve(r.id)} className="bg-green-500 text-white px-3 py-1 rounded">

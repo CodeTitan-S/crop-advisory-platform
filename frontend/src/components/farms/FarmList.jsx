@@ -1,29 +1,14 @@
-import { useEffect, useState } from 'react';
-import { getMyFarms } from '../../api/farmService';
 import { Link } from 'react-router-dom';
+import { getMyFarms } from '../../api/farmService';
+import useFetch from '../../hooks/useFetch';
 
 export default function FarmList() {
-  const [farms, setFarms] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    fetchFarms();
-  }, []);
-
-  const fetchFarms = async () => {
-    try {
-      const response = await getMyFarms();
-      setFarms(response.data.data);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load farms');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data, loading, error } = useFetch(getMyFarms, [], 'Failed to load farms');
 
   if (loading) return <p className="text-gray-600">Loading farms...</p>;
   if (error) return <p className="text-red-600">{error}</p>;
+
+  const farms = data ?? [];
 
   return (
     <div>
