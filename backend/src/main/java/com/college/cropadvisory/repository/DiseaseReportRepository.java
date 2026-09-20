@@ -9,4 +9,7 @@ import java.util.List;
 public interface DiseaseReportRepository extends JpaRepository<DiseaseReport, Long> {
     List<DiseaseReport> findByFarmerOrderByCreatedAtDesc(User farmer);
     List<DiseaseReport> findByOfficerOrOfficerIsNullOrderByCreatedAtDesc(User officer);
+
+    long countByFarmer(User farmer);
+    long countByOfficer(User officer);
 }

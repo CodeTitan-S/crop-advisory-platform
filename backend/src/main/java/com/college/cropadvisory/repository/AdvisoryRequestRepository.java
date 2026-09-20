@@ -9,4 +9,7 @@ import java.util.List;
 public interface AdvisoryRequestRepository extends JpaRepository<AdvisoryRequest, Long> {
     List<AdvisoryRequest> findByFarmerOrderByCreatedAtDesc(User farmer);
     List<AdvisoryRequest> findByOfficerOrOfficerIsNullOrderByCreatedAtDesc(User officer);
+
+    long countByFarmer(User farmer);
+    long countByOfficer(User officer);
 }

@@ -8,6 +8,9 @@ import Signup from './pages/Signup';
 import FarmerDashboard from './pages/FarmerDashboard';
 import OfficerDashboard from './pages/OfficerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminUserList from './components/admin/AdminUserList';
+import KnowledgeBaseManager from './components/admin/KnowledgeBaseManager';
+import AdminAnalytics from './components/admin/AdminAnalytics';
 import NotFound from './pages/NotFound';
 import FarmList from './components/farms/FarmList';
 import FarmCreate from './components/farms/FarmCreate';
@@ -66,7 +69,11 @@ export default function App() {
             </Route>
           </Route>
           <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
-            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin" element={<AdminDashboard />}>
+              <Route index element={<AdminAnalytics />} />
+              <Route path="users" element={<AdminUserList />} />
+              <Route path="knowledge-base" element={<KnowledgeBaseManager />} />
+            </Route>
           </Route>
           
           {/* Catch-all */}

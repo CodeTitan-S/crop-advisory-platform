@@ -1,11 +1,11 @@
-import { useAuth } from '../context/authContext';
+import DashboardTabs from '../components/DashboardTabs';
+
+const TABS = [
+  { to: '/admin', label: 'Analytics' },
+  { to: '/admin/users', label: 'Users' },
+  { to: '/admin/knowledge-base', label: 'Knowledge Base' },
+];
 
 export default function AdminDashboard() {
-  const { user } = useAuth();
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-      <p>Welcome, {user?.email}</p>
-    </div>
-  );
+  return <DashboardTabs title="Admin Dashboard" tabs={TABS} />;
 }

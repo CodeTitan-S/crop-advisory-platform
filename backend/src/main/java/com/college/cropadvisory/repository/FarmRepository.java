@@ -8,4 +8,6 @@ import java.util.List;
 
 public interface FarmRepository extends JpaRepository<Farm, Long> {
     List<Farm> findByUser(User user);
+
+    long countByUser(User user);
 }

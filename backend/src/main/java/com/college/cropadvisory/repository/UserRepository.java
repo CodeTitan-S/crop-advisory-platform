@@ -1,5 +1,6 @@
 package com.college.cropadvisory.repository;
 
+import com.college.cropadvisory.model.entity.Role;
 import com.college.cropadvisory.model.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -10,4 +11,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
 
     Boolean existsByEmail(String email);
+
+    long countByRole(Role role);
 }

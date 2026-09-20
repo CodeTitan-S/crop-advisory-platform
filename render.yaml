@@ -20,6 +20,12 @@ services:
         value: update
       - key: SHOW_SQL
         value: "false"
+      # sync: false keeps the value out of the repository. Set both in the Render
+      # dashboard; until then the admin bootstrap is skipped.
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
       - key: DATABASE_URL
         fromDatabase:
           name: cropadvisory-db
