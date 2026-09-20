@@ -40,6 +40,7 @@ class FarmServiceTest {
 
     private User farmer;
     private User otherFarmer;
+    private User officer;
     private FarmRequest farmRequest;
     private Farm sampleFarm;
 
@@ -56,6 +57,12 @@ class FarmServiceTest {
         otherFarmer.setName("Eve Farmer");
         otherFarmer.setEmail("eve@example.com");
         otherFarmer.setRole(Role.FARMER);
+
+        officer = new User();
+        officer.setId(3L);
+        officer.setName("Sam Officer");
+        officer.setEmail("sam@example.com");
+        officer.setRole(Role.OFFICER);
 
         farmRequest = new FarmRequest();
         farmRequest.setLocation("North Valley");
@@ -180,5 +187,49 @@ class FarmServiceTest {
                 () -> farmService.getFarmOwnedBy(999L, farmer));
 
         assertEquals("Farm not found", ex.getMessage());
+    }
+
+    // ─── getFarmReadableBy ──────────────────────────────────────────────
+
+    /** Happy path: a farmer may read a farm they own. */
+    @Test
+    @DisplayName("getFarmReadableBy – success: farmer reads own farm")
+    void getFarmReadableBy_farmerOwnsFarm() {
+        when(farmRepository.findById(10L)).thenReturn(Optional.of(sampleFarm));
+
+        Farm result = farmService.getFarmReadableBy(10L, farmer);
+
+        assertEquals(sampleFarm, result);
+    }
+
+    /** Fail: a farmer may not read another farmer's farm. */
+    @Test
+    @DisplayName("getFarmReadableBy – fail: farmer forbidden on another farm")
+    void getFarmReadableBy_farmerNotOwner() {
+        when(farmRepository.findById(10L)).thenReturn(Optional.of(sampleFarm));
+
+        assertThrows(ForbiddenException.class,
+                () -> farmService.getFarmReadableBy(10L, otherFarmer));
+    }
+
+    /** Happy path: an officer may read any farm, even one they do not own. */
+    @Test
+    @DisplayName("getFarmReadableBy – success: officer reads any farm")
+    void getFarmReadableBy_officerAnyFarm() {
+        when(farmRepository.findById(10L)).thenReturn(Optional.of(sampleFarm));
+
+        Farm result = farmService.getFarmReadableBy(10L, officer);
+
+        assertEquals(sampleFarm, result);
+    }
+
+    /** Fail: unknown farm id, regardless of role. */
+    @Test
+    @DisplayName("getFarmReadableBy – fail: farm not found")
+    void getFarmReadableBy_notFound() {
+        when(farmRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class,
+                () -> farmService.getFarmReadableBy(999L, officer));
     }
 }

@@ -73,6 +73,27 @@ jobs:
           path: backend/target/surefire-reports/
           retention-days: 7
 
+      # The >=40% service-layer gate itself is enforced inside `./mvnw test` by the
+      # jacoco:check execution in pom.xml; this only surfaces the number in the log.
+      - name: Show service-layer coverage
+        if: always()
+        working-directory: ./backend
+        run: |
+          CSV=target/site/jacoco/jacoco.csv
+          if [ -f "$CSV" ]; then
+            awk -F, '$2=="com.college.cropadvisory.service" {m+=$8; c+=$9} END {t=m+c; if (t>0) printf "Service-layer line coverage: %.1f%% (required: >=40%%)\n", (c*100)/t; else print "No service classes measured"}' "$CSV"
+          else
+            echo "::warning::No JaCoCo data found - coverage was not measured"
+          fi
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-coverage-report
+          path: backend/target/site/jacoco/
+          retention-days: 7
+
       - name: Upload build artifact
         if: success()
         uses: actions/upload-artifact@v4

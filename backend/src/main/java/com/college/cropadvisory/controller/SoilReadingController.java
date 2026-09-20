@@ -48,9 +48,11 @@ public class SoilReadingController {
     @GetMapping
     @PreAuthorize("hasRole('FARMER') or hasRole('OFFICER')")
     public ResponseEntity<ApiResponse<List<SoilReading>>> getReadings(
-            @PathVariable Long farmId) {
-        // Farmers can read their own farm; officers can read any farm.
-        Farm farm = farmService.getFarm(farmId);
+            @PathVariable Long farmId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        // Farmers can read their own farm only; officers can read any farm.
+        User user = userService.getUserByEmail(userDetails.getUsername());
+        Farm farm = farmService.getFarmReadableBy(farmId, user);
         List<SoilReading> readings = soilReadingService.getReadingsByFarm(farm);
         return ResponseEntity.ok(new ApiResponse<>(true, "Readings fetched", readings));
     }

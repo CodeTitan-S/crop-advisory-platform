@@ -22,12 +22,20 @@ export default function FarmList() {
               <h3 className="font-bold text-lg">{farm.location}</h3>
               <p><span className="font-medium">Size:</span> {farm.size} acres</p>
               <p><span className="font-medium">Soil Type:</span> {farm.soilType}</p>
-              <Link
-                to={`/farmer/farms/${farm.id}/soil-readings`}
-                className="mt-2 inline-block text-green-700 hover:underline"
-              >
-                View Soil Readings →
-              </Link>
+              <div className="mt-2 flex gap-4">
+                <Link
+                  to={`/farmer/farms/${farm.id}/soil-readings`}
+                  className="text-green-700 hover:underline"
+                >
+                  View Soil Readings →
+                </Link>
+                <Link
+                  to={`/farmer/farms/${farm.id}/season-logs`}
+                  className="text-green-700 hover:underline"
+                >
+                  View Season History →
+                </Link>
+              </div>
             </div>
           ))}
         </div>

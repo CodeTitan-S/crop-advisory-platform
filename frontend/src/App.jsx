@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthProvider';
+import { useAuth } from './context/authContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Login from './pages/Login';
@@ -13,6 +14,8 @@ import FarmCreate from './components/farms/FarmCreate';
 import AdvisoryRequests from './pages/farmer/AdvisoryRequests';
 import SoilReadingList from './components/soil/SoilReadingList';
 import SoilReadingForm from './components/soil/SoilReadingForm';
+import SeasonLogList from './components/season/SeasonLogList';
+import SeasonLogForm from './components/season/SeasonLogForm';
 import AdvisoryForm from './components/advisory/AdvisoryForm';
 import AdvisoryQueue from './components/officer/AdvisoryQueue';
 import DiseaseQueue from './components/officer/DiseaseQueue';
@@ -48,6 +51,9 @@ export default function App() {
               <Route path="advisory-requests" element={<AdvisoryRequests />} />
               <Route path="farms/:farmId/soil-readings" element={<SoilReadingList />} />
               <Route path="farms/:farmId/soil-readings/new" element={<SoilReadingForm />} />
+              <Route path="farms/:farmId/season-logs" element={<SeasonLogList />} />
+              <Route path="farms/:farmId/season-logs/new" element={<SeasonLogForm />} />
+              <Route path="farms/:farmId/season-logs/:logId/edit" element={<SeasonLogForm />} />
               <Route path="advisory-requests/new" element={<AdvisoryForm />} />
               <Route path="disease-reports" element={<DiseaseReportList />} />
               <Route path="disease-reports/new" element={<DiseaseReportForm />} />

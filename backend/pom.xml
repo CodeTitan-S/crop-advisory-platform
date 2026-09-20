@@ -126,6 +126,63 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
+
+            <!--
+              Code coverage. The gate is intentionally scoped to the service package (the
+              layer the capstone requires 40% coverage on) rather than the whole bundle, so
+              untested controllers/DTOs cannot drag the number below the threshold.
+            -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.12</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>check-service-layer</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <!--
+                              Scoping the gate to the service package must be done with this
+                              goal-level <includes>, which limits what gets analysed. A rule-level
+                              <includes> has no effect on a BUNDLE rule: the rule then matches no
+                              element and silently passes at any threshold, so the gate would
+                              look enforced while checking nothing.
+                            -->
+                            <includes>
+                                <include>com/college/cropadvisory/service/*</include>
+                            </includes>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.40</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>

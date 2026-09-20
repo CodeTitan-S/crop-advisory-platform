@@ -4,6 +4,7 @@ import com.college.cropadvisory.dto.FarmRequest;
 import com.college.cropadvisory.exception.ForbiddenException;
 import com.college.cropadvisory.exception.NotFoundException;
 import com.college.cropadvisory.model.entity.Farm;
+import com.college.cropadvisory.model.entity.Role;
 import com.college.cropadvisory.model.entity.User;
 import com.college.cropadvisory.repository.FarmRepository;
 import org.springframework.stereotype.Service;
@@ -48,5 +49,18 @@ public class FarmService {
             throw new ForbiddenException("Not your farm");
         }
         return farm;
+    }
+
+    /**
+     * Loads a farm the given user is allowed to read: farmers are restricted to farms they own,
+     * while officers and admins may read any farm (officers need the farm's context to advise on
+     * requests and reports raised against it). Fails with 404 if the farm does not exist and
+     * 403 if a farmer asks for someone else's farm.
+     */
+    public Farm getFarmReadableBy(Long farmId, User user) {
+        if (user.getRole() == Role.FARMER) {
+            return getFarmOwnedBy(farmId, user);
+        }
+        return getFarm(farmId);
     }
 }
