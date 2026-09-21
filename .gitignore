@@ -1,3 +1,6 @@
+# Uploaded files (backend/app.upload.dir)
+uploads/
+
 # Environments & Secrets
 .env
 .venv

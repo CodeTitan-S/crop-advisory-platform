@@ -48,6 +48,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/v3/api-docs").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
+                // Report photos are rendered by an <img> tag, which cannot send a bearer token.
+                // Only reads are open; uploading still requires authentication.
+                .requestMatchers(HttpMethod.GET, "/api/files/**").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

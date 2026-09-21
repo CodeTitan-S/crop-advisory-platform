@@ -11,6 +11,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -64,6 +65,13 @@ public class GlobalExceptionHandler {
         });
         return ResponseEntity.badRequest()
                 .body(new ApiResponse<>(false, "Validation failed", errors));
+    }
+
+    /** A photo over the multipart limit is the client's problem, not a server fault. */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Object>> handleUploadTooLarge(MaxUploadSizeExceededException ex) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(new ApiResponse<>(false, "Photo must be 2 MB or smaller", null));
     }
 
     /** Anything unhandled is a genuine server fault: log it, but never leak details to the client. */

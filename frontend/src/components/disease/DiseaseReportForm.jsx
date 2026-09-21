@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { submitDiseaseReport } from '../../api/diseaseService';
+import { uploadPhoto } from '../../api/fileService';
 import { getMyFarms } from '../../api/farmService';
 import getErrorMessage from '../../utils/errorMessage';
 
@@ -8,7 +9,8 @@ export default function DiseaseReportForm() {
   const [farms, setFarms] = useState([]);
   const [farmId, setFarmId] = useState('');
   const [description, setDescription] = useState('');
-  const [imageUrl, setImageUrl] = useState(''); // optional
+  const [imageUrl, setImageUrl] = useState(''); // optional, set by the upload
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
@@ -26,6 +28,26 @@ export default function DiseaseReportForm() {
     };
     fetchFarms();
   }, []);
+
+  // Uploads as soon as a file is chosen, so the farmer sees the photo and any rejection before
+  // submitting the report itself.
+  const handlePhotoChange = async (event) => {
+    const input = event.target;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    setError('');
+    setUploading(true);
+    try {
+      setImageUrl(await uploadPhoto(file));
+    } catch (err) {
+      setImageUrl('');
+      setError(getErrorMessage(err, 'Could not upload the photo'));
+    } finally {
+      setUploading(false);
+      input.value = ''; // let the same file be chosen again after a failure
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -76,21 +98,45 @@ export default function DiseaseReportForm() {
         </div>
 
         <div className="mb-4">
-          <label className="block text-gray-700">Image URL (optional)</label>
+          <label className="block text-gray-700" htmlFor="photo">
+            Photo (optional)
+          </label>
           <input
-            type="text"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
+            id="photo"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={handlePhotoChange}
+            disabled={uploading}
             className="w-full px-3 py-2 border rounded"
-            placeholder="https://example.com/photo.jpg"
           />
+          <p className="text-sm text-gray-500 mt-1">JPEG, PNG, WebP or GIF, up to 2 MB.</p>
+
+          {uploading && <p className="text-sm text-gray-600 mt-2">Uploading photo...</p>}
+
+          {imageUrl && (
+            <div className="mt-2">
+              <img
+                src={imageUrl}
+                alt="Selected crop problem"
+                className="w-32 h-32 object-cover rounded border"
+              />
+              <button
+                type="button"
+                onClick={() => setImageUrl('')}
+                className="block text-sm text-red-600 hover:underline mt-1"
+              >
+                Remove photo
+              </button>
+            </div>
+          )}
         </div>
 
         <button
           type="submit"
-          className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded font-semibold"
+          disabled={uploading}
+          className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded font-semibold disabled:opacity-60"
         >
-          Submit Report
+          {uploading ? 'Uploading photo...' : 'Submit Report'}
         </button>
       </form>
     </div>
