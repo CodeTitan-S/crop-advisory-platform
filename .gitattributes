@@ -1,0 +1,22 @@
+# Line endings
+#
+# This matches `end_of_line = lf` in .editorconfig: text files are stored with LF
+# in the repository AND checked out with LF on every platform. Without this,
+# Windows' global `core.autocrlf=true` converts LF to CRLF on checkout, so every
+# `git add` reports "LF will be replaced by CRLF in <file>" — the tool normalizes
+# a file that the next checkout would immediately convert back.
+
+* text=auto eol=lf
+
+# Windows batch files are the one exception: cmd.exe needs CRLF to parse them.
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Binary assets — never normalize these.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.pptx binary
