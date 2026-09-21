@@ -1,0 +1,236 @@
+%% Crop Advisory Platform — as-built class / module view.
+%% Rendered to class-diagram.png with:
+%%   npx -y @mermaid-js/mermaid-cli -i docs/diagram/class-diagram.mmd -o docs/diagram/class-diagram.png -b white -w 1800
+%% Edit this file, not the PNG. Only the load-bearing members are shown; DTOs are omitted.
+classDiagram
+    direction LR
+
+    namespace Config {
+        class SecurityConfig {
+            +securityFilterChain(HttpSecurity) SecurityFilterChain
+            +corsConfigurationSource() CorsConfigurationSource
+            +passwordEncoder() PasswordEncoder
+        }
+        class JwtAuthenticationFilter {
+            +doFilterInternal(request, response, chain) void
+        }
+        class JwtTokenProvider {
+            +generateToken(email, role) String
+            +parseClaims(token) Claims
+        }
+        class DataSourceConfig {
+            +dataSource() DataSource
+        }
+        class AdminSeeder {
+            +run(args) void
+            +seedAdmin() boolean
+        }
+    }
+
+    namespace Controller {
+        class AuthController
+        class FarmController
+        class SoilReadingController
+        class SeasonLogController
+        class AdvisoryRequestController
+        class DiseaseReportController
+        class AdminController
+        class KnowledgeBaseController
+        class FileController {
+            +upload(file) ApiResponse
+            +getFile(fileName) Resource
+        }
+    }
+
+    namespace Service {
+        class UserService {
+            +registerUser(request) User
+            +authenticateUser(request) String
+            +getUserByEmail(email) User
+        }
+        class FarmService {
+            +createFarm(farmer, request) Farm
+            +getFarmOwnedBy(farmId, user) Farm
+            +getFarmReadableBy(farmId, user) Farm
+        }
+        class SoilReadingService {
+            +logReading(farm, request) SoilReading
+            +getReadingsByFarm(farm) List~SoilReading~
+        }
+        class SeasonLogService {
+            +logSeason(farm, request) SeasonLog
+            +getLogsByFarm(farm) List~SeasonLog~
+            +updateLog(farmId, logId, user, request) SeasonLog
+        }
+        class AdvisoryRequestService {
+            +submitRequest(farmer, farmId, question) AdvisoryRequest
+            +getRequestsForOfficer(officer) List~AdvisoryRequest~
+            +assignToOfficer(id, officer) AdvisoryRequest
+            +respondToRequest(id, officer, text) AdvisoryRequest
+            +closeRequest(id, user) AdvisoryRequest
+        }
+        class DiseaseReportService {
+            +submitReport(farmer, request) DiseaseReport
+            +reviewReport(id, officer) DiseaseReport
+            +resolveReport(id, officer, notes) DiseaseReport
+        }
+        class AdminService {
+            +getAllUsers() List~UserSummaryResponse~
+            +updateUserRole(admin, userId, role) UserSummaryResponse
+            +deleteUser(admin, userId) void
+            +getAnalytics() AnalyticsResponse
+        }
+        class KnowledgeBaseService {
+            +getAll() List~KnowledgeBaseEntry~
+            +create(admin, request) KnowledgeBaseEntry
+            +update(id, request) KnowledgeBaseEntry
+            +delete(id) void
+        }
+        class FileStorageService {
+            +store(file) String
+            +load(fileName) StoredFile
+        }
+        class CustomUserDetailsService {
+            +loadUserByUsername(email) UserDetails
+        }
+    }
+
+    namespace Repository {
+        class UserRepository
+        class FarmRepository
+        class SoilReadingRepository
+        class SeasonLogRepository
+        class AdvisoryRequestRepository
+        class DiseaseReportRepository
+        class KnowledgeBaseEntryRepository
+    }
+
+    namespace Entity {
+        class User {
+            +Long id
+            +String name
+            +String email
+            +String passwordHash
+            +Role role
+        }
+        class Farm {
+            +Long id
+            +String location
+            +Double size
+            +String soilType
+        }
+        class SoilReading {
+            +Long id
+            +Double nitrogen
+            +Double phosphorus
+            +Double potassium
+            +Double ph
+            +Double rainfall
+            +Double temperature
+            +LocalDateTime recordedAt
+        }
+        class SeasonLog {
+            +Long id
+            +String cropPlanted
+            +LocalDate sowingDate
+            +String outcomeNotes
+        }
+        class AdvisoryRequest {
+            +Long id
+            +String questionText
+            +AdvisoryStatus status
+            +String responseText
+            +LocalDateTime createdAt
+            +LocalDateTime respondedAt
+        }
+        class DiseaseReport {
+            +Long id
+            +String description
+            +String imageUrl
+            +DiseaseStatus status
+            +String resolutionNotes
+            +LocalDateTime createdAt
+            +LocalDateTime resolvedAt
+        }
+        class KnowledgeBaseEntry {
+            +Long id
+            +String cropOrDiseaseName
+            +String description
+            +String remedyOrAdvice
+            +String source
+        }
+        class Role {
+            FARMER
+            OFFICER
+            ADMIN
+        }
+        class AdvisoryStatus {
+            PENDING
+            ASSIGNED
+            RESPONDED
+            CLOSED
+        }
+        class DiseaseStatus {
+            REPORTED
+            UNDER_REVIEW
+            RESOLVED
+        }
+    }
+
+    SecurityConfig ..> JwtAuthenticationFilter : registers
+    JwtAuthenticationFilter --> JwtTokenProvider
+    JwtAuthenticationFilter --> CustomUserDetailsService
+    UserService --> CustomUserDetailsService : via AuthenticationManager
+    AdminSeeder --> UserRepository
+
+    AuthController --> UserService
+    FarmController --> FarmService
+    FarmController --> UserService
+    SoilReadingController --> SoilReadingService
+    SoilReadingController --> FarmService
+    SeasonLogController --> SeasonLogService
+    SeasonLogController --> FarmService
+    AdvisoryRequestController --> AdvisoryRequestService
+    AdvisoryRequestController --> UserService
+    DiseaseReportController --> DiseaseReportService
+    DiseaseReportController --> UserService
+    AdminController --> AdminService
+    KnowledgeBaseController --> KnowledgeBaseService
+    FileController --> FileStorageService
+
+    AdvisoryRequestService --> FarmService
+    DiseaseReportService --> FarmService
+    AdminService --> UserRepository
+    AdminService --> FarmRepository
+    AdminService --> AdvisoryRequestRepository
+    AdminService --> DiseaseReportRepository
+    KnowledgeBaseService --> KnowledgeBaseEntryRepository
+
+    UserService --> UserRepository
+    FarmService --> FarmRepository
+    SoilReadingService --> SoilReadingRepository
+    SeasonLogService --> SeasonLogRepository
+    AdvisoryRequestService --> AdvisoryRequestRepository
+    DiseaseReportService --> DiseaseReportRepository
+
+    UserRepository ..> User
+    FarmRepository ..> Farm
+    SoilReadingRepository ..> SoilReading
+    SeasonLogRepository ..> SeasonLog
+    AdvisoryRequestRepository ..> AdvisoryRequest
+    DiseaseReportRepository ..> DiseaseReport
+    KnowledgeBaseEntryRepository ..> KnowledgeBaseEntry
+
+    User "1" --> "0..*" Farm : owns
+    Farm "1" --> "0..*" SoilReading : has
+    Farm "1" --> "0..*" SeasonLog : has
+    Farm "1" --> "0..*" AdvisoryRequest : raises
+    Farm "1" --> "0..*" DiseaseReport : raises
+    User "1" --> "0..*" AdvisoryRequest : farmer
+    User "1" --> "0..*" AdvisoryRequest : officer
+    User "1" --> "0..*" DiseaseReport : farmer
+    User "1" --> "0..*" DiseaseReport : officer
+    User "1" --> "0..*" KnowledgeBaseEntry : author
+    User --> Role
+    AdvisoryRequest --> AdvisoryStatus
+    DiseaseReport --> DiseaseStatus

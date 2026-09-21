@@ -1,0 +1,35 @@
+%% Crop Advisory Platform — as-built architecture.
+%% Rendered to architecture-diagram.png with:
+%%   npx -y @mermaid-js/mermaid-cli -i docs/diagram/architecture-diagram.mmd -o docs/diagram/architecture-diagram.png -b white -w 1800
+%% Edit this file, not the PNG.
+flowchart LR
+    subgraph browser["Browser — React 19 + Vite SPA (Vercel)"]
+        pages["Role-based screens<br/>Farmer · Officer · Admin"]
+        axios["axios client<br/>Bearer JWT, multipart photo upload"]
+    end
+
+    subgraph backend["Spring Boot 3.3 API (Render · Docker · Java 17)"]
+        security["SecurityConfig + JwtAuthenticationFilter<br/>BCrypt hashing, @PreAuthorize role guards"]
+        controllers["Controllers /api/**<br/>auth · farms · soil readings · season logs<br/>advisory · disease reports · admin · files"]
+        services["Services<br/>workflow state machines, ownership checks,<br/>user &amp; knowledge-base admin rules"]
+        repos["Spring Data JPA repositories"]
+        storage["FileStorageService<br/>report photos on disk"]
+        health["Actuator /actuator/health"]
+    end
+
+    db[("PostgreSQL 15<br/>Render managed")]
+    ml["ML microservice — Phase 3 (Day 42-60)<br/>Python · FastAPI · POST /predict<br/>not yet built"]
+
+    pages --> axios
+    axios -->|"HTTPS + Bearer JWT"| security
+    security --> controllers
+    controllers --> services
+    services --> repos
+    repos --> db
+    services --> storage
+    axios -.->|"GET /api/files/{name}<br/>photo served for img tag"| storage
+    services -.->|"latest SoilReading in,<br/>ranked crops out"| ml
+    health -.->|"datasource check"| db
+
+    classDef phase3 stroke-dasharray: 6 4,stroke-width:1.5px;
+    class ml phase3;

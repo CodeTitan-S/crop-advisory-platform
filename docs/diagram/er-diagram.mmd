@@ -1,0 +1,85 @@
+%% Crop Advisory Platform — as-built entity relationships.
+%% Rendered to er-diagram.png with:
+%%   npx -y @mermaid-js/mermaid-cli -i docs/diagram/er-diagram.mmd -o docs/diagram/er-diagram.png -b white -w 1800
+%% Edit this file, not the PNG.
+erDiagram
+    USERS ||--o{ FARMS : "owns (user_id)"
+    FARMS ||--o{ SOIL_READINGS : "logged for (farm_id)"
+    FARMS ||--o{ SEASON_LOGS : "recorded for (farm_id)"
+    FARMS ||--o{ ADVISORY_REQUESTS : "concerns (farm_id)"
+    FARMS ||--o{ DISEASE_REPORTS : "concerns (farm_id)"
+    USERS ||--o{ ADVISORY_REQUESTS : "raises (farmer_id)"
+    USERS |o--o{ ADVISORY_REQUESTS : "handles (officer_id, nullable)"
+    USERS ||--o{ DISEASE_REPORTS : "raises (farmer_id)"
+    USERS |o--o{ DISEASE_REPORTS : "reviews (officer_id, nullable)"
+    USERS ||--o{ KNOWLEDGE_BASE_ENTRIES : "authors (created_by_admin_id)"
+
+    USERS {
+        bigint id PK
+        varchar name
+        varchar email UK
+        varchar password_hash
+        varchar role "FARMER | OFFICER | ADMIN"
+    }
+
+    FARMS {
+        bigint id PK
+        bigint user_id FK
+        varchar location
+        double size "acres"
+        varchar soil_type
+    }
+
+    SOIL_READINGS {
+        bigint id PK
+        bigint farm_id FK
+        double nitrogen
+        double phosphorus
+        double potassium
+        double ph
+        double rainfall
+        double temperature
+        timestamp recorded_at
+    }
+
+    SEASON_LOGS {
+        bigint id PK
+        bigint farm_id FK
+        varchar crop_planted
+        date sowing_date
+        text outcome_notes "nullable"
+    }
+
+    ADVISORY_REQUESTS {
+        bigint id PK
+        bigint farmer_id FK
+        bigint officer_id FK "nullable until assigned"
+        bigint farm_id FK
+        text question_text
+        varchar status "PENDING -> ASSIGNED -> RESPONDED -> CLOSED"
+        text response_text "nullable, officer reply"
+        timestamp created_at
+        timestamp responded_at "nullable"
+    }
+
+    DISEASE_REPORTS {
+        bigint id PK
+        bigint farmer_id FK
+        bigint officer_id FK "nullable until reviewed"
+        bigint farm_id FK
+        text description
+        varchar image_url "nullable, uploaded photo URL"
+        varchar status "REPORTED -> UNDER_REVIEW -> RESOLVED"
+        text resolution_notes "nullable"
+        timestamp created_at
+        timestamp resolved_at "nullable"
+    }
+
+    KNOWLEDGE_BASE_ENTRIES {
+        bigint id PK
+        varchar crop_or_disease_name
+        text description
+        text remedy_or_advice
+        varchar source
+        bigint created_by_admin_id FK
+    }
