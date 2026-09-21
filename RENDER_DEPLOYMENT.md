@@ -103,6 +103,7 @@ expecting a restart to pick it up.
 | `JWT_EXPIRATION_MS` | no | Default `86400000` (24 hours) |
 | `DDL_AUTO` | no | Default `update`. Use `validate` in production. |
 | `SHOW_SQL` | no | Default `false`. Set `true` to debug SQL. |
+| `APP_UPLOAD_DIR` | no | Default `uploads`. Where uploaded report photos are written. Render's free tier has an ephemeral filesystem, so files are lost on redeploy/restart — see "Uploaded photos 404" below. |
 | `ADMIN_EMAIL` | no | Email for the bootstrapped admin account. Requires `ADMIN_PASSWORD`. Declared `sync: false` in the Blueprint, so set it in the dashboard. |
 | `ADMIN_PASSWORD` | no | Password for the bootstrapped admin account. Set both or neither. |
 | `PORT` | no | Default `8080`. Render injects this automatically. |
@@ -231,6 +232,16 @@ entirely.
 
 Vercel is serving a cached build. Clear the build cache (Settings → General → **Clear Cache**) and
 redeploy.
+
+### Uploaded photos 404 after a deploy
+
+Render's filesystem is ephemeral on the free plan: an uploaded report photo lives on the instance's
+disk, so it disappears on redeploy, restart or spin-down and `GET /api/files/{name}` then returns
+404. Re-upload the photo, or make storage durable:
+
+- attach a persistent disk and set `APP_UPLOAD_DIR` to its mount path (paid plans), or
+- replace `FileStorageService` with an object-store client (S3/Cloudinary) — it is the only class
+  that touches the filesystem, and it returns the URL stored on the report.
 
 ### 404 when opening or refreshing a deep link
 

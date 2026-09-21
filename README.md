@@ -49,7 +49,8 @@ sides a single place to work:
 - **Season history** — record the crop sown each season and how it turned out.
 - **Advisory requests** — farmer submits; officer assigns, responds, then closes.
   Status machine: `PENDING → ASSIGNED → RESPONDED → CLOSED`.
-- **Disease reports** — farmer reports a crop issue; officer reviews and resolves.
+- **Disease reports** — farmer reports a crop issue with an optional photo (JPEG/PNG/WebP/GIF,
+  up to 2 MB, uploaded to the API); officer reviews and resolves.
   Status machine: `REPORTED → UNDER_REVIEW → RESOLVED`.
 - **Officer queue** — all requests and reports, including unassigned ones, in one view, with a
   status filter and sorting by age (newest/oldest) or by status.
@@ -66,7 +67,15 @@ sides a single place to work:
 
 The React SPA calls the Spring Boot REST API over HTTPS with a bearer JWT. The API persists to
 PostgreSQL through Spring Data JPA and exposes `/actuator/health` for the platform health check.
-See [`docs/diagram/`](docs/diagram/) for the ER and class diagrams.
+See [`docs/diagram/`](docs/diagram/) for the ER and class diagrams. The Phase 3 ML microservice is
+marked on the architecture diagram as a future component.
+
+Each diagram is kept as Mermaid source (`.mmd`) next to its PNG, so it can be reviewed in a diff and
+regenerated from the code rather than redrawn by hand:
+
+```bash
+npx -y @mermaid-js/mermaid-cli -i docs/diagram/er-diagram.mmd -o docs/diagram/er-diagram.png -b white -w 1800
+```
 
 ---
 
@@ -175,6 +184,7 @@ coverage drops below it. The current figure is **92.6%**, and a full HTML report
 | `FRONTEND_URL` | Production | `http://localhost:5173` | Comma-separated CORS origins, **no trailing slash**. Must list every origin that calls the API |
 | `DDL_AUTO` | No | `update` | Hibernate schema mode (`update`, `validate`, `create-drop`). Use `validate` in production |
 | `SHOW_SQL` | No | `false` | Log every SQL statement |
+| `APP_UPLOAD_DIR` | No | `uploads` | Directory for uploaded report photos. On a host with an ephemeral filesystem (Render's free tier) files are lost on redeploy or restart — see [Report photos](#report-photos) |
 | `ADMIN_EMAIL` | No | — | Creates the first ADMIN account on startup. Requires `ADMIN_PASSWORD` too, and is skipped once any admin exists. See [Admin bootstrap](#admin-bootstrap) |
 | `ADMIN_PASSWORD` | No | — | Password for the bootstrapped admin account. Set both or neither |
 | `PORT` | No | `8080` | HTTP port. Render injects this automatically |
@@ -202,6 +212,18 @@ On Render, set both in the dashboard (the Blueprint declares them with `sync: fa
 credentials live in the repository). If the email already belongs to a non-admin account, the
 seeder deliberately does **not** promote it — change that user's role from the admin user list
 instead.
+
+### Report photos
+
+A farmer can attach one photo to a disease report. The form uploads it to `POST /api/files`
+(multipart field `file`, JPEG/PNG/WebP/GIF, 2 MB) and stores the returned URL on the report; the file
+is served back from `GET /api/files/{name}` so an `<img>` tag can display it, which is why that one
+route is readable without a token — the name is a random UUID and cannot be guessed.
+
+Files are written to `APP_UPLOAD_DIR` (default `uploads/`). **On Render's free tier the filesystem
+is ephemeral**, so uploaded photos are lost on redeploy or restart and the image will 404 until it is
+uploaded again. For a durable setup, point `APP_UPLOAD_DIR` at a mounted disk (paid plan) or replace
+`FileStorageService` with an object-store client — it is the only class that touches the filesystem.
 
 ---
 
@@ -297,7 +319,7 @@ integrations, so no deploy secrets are needed in GitHub Actions.
 │   ├── src/hooks/           useFetch
 │   ├── src/pages/           Login, Signup, dashboards
 │   └── vercel.json          SPA rewrite configuration
-├── docs/diagram/            architecture, ER and class diagrams
+├── docs/diagram/            architecture, ER and class diagrams (.mmd source + rendered .png)
 ├── docker-compose.yml       local PostgreSQL 15
 ├── render.yaml              Render Blueprint (API + database)
 ├── RENDER_DEPLOYMENT.md     deployment and troubleshooting guide
