@@ -3,6 +3,8 @@ package com.college.cropadvisory.service;
 import com.college.cropadvisory.config.JwtTokenProvider;
 import com.college.cropadvisory.dto.LoginRequest;
 import com.college.cropadvisory.dto.SignupRequest;
+import com.college.cropadvisory.exception.BadRequestException;
+import com.college.cropadvisory.exception.ForbiddenException;
 import com.college.cropadvisory.model.entity.Role;
 import com.college.cropadvisory.model.entity.User;
 import com.college.cropadvisory.repository.UserRepository;
@@ -100,7 +102,7 @@ class UserServiceTest {
         verify(userRepository, never()).save(any());
     }
 
-    /** Invalid role string should throw IllegalArgumentException from Role.valueOf. */
+    /** An unrecognised role string is a malformed request. */
     @Test
     @DisplayName("registerUser – fail: invalid role throws exception")
     void registerUser_invalidRole() {
@@ -109,8 +111,40 @@ class UserServiceTest {
 
         signupRequest.setRole("INVALID_ROLE");
 
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(BadRequestException.class,
                 () -> userService.registerUser(signupRequest));
+        verify(userRepository, never()).save(any());
+    }
+
+    /**
+     * Self-registering as ADMIN must be refused: admin accounts come only from AdminSeeder, and
+     * accepting the requested role would otherwise let anyone mint an admin over HTTP.
+     */
+    @Test
+    @DisplayName("registerUser – fail: ADMIN cannot be self-registered")
+    void registerUser_adminRoleForbidden() {
+        when(userRepository.existsByEmail("john@example.com")).thenReturn(false);
+        when(passwordEncoder.encode(anyString())).thenReturn("encoded");
+
+        signupRequest.setRole("ADMIN");
+
+        assertThrows(ForbiddenException.class,
+                () -> userService.registerUser(signupRequest));
+        verify(userRepository, never()).save(any());
+    }
+
+    /** The check is case-insensitive, so a lowercase "admin" cannot slip through either. */
+    @Test
+    @DisplayName("registerUser – fail: lowercase 'admin' also forbidden")
+    void registerUser_adminRoleForbiddenCaseInsensitive() {
+        when(userRepository.existsByEmail("john@example.com")).thenReturn(false);
+        when(passwordEncoder.encode(anyString())).thenReturn("encoded");
+
+        signupRequest.setRole("admin");
+
+        assertThrows(ForbiddenException.class,
+                () -> userService.registerUser(signupRequest));
+        verify(userRepository, never()).save(any());
     }
 
     // ─── authenticateUser ───────────────────────────────────────────────
