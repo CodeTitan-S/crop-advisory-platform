@@ -10,8 +10,11 @@ import com.college.cropadvisory.exception.NotFoundException;
 import com.college.cropadvisory.model.entity.Role;
 import com.college.cropadvisory.model.entity.User;
 import com.college.cropadvisory.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +23,8 @@ import java.util.Set;
 
 @Service
 public class UserService {
+
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
     /**
      * Roles a visitor may assign themselves. ADMIN is deliberately absent: admin accounts are
@@ -45,6 +50,8 @@ public class UserService {
 
     public User registerUser(SignupRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
+            // Logged so repeated attempts against one address are visible without an account leak.
+            log.warn("Signup rejected: email already registered");
             throw new ConflictException("Email already registered");
         }
 
@@ -53,14 +60,23 @@ public class UserService {
         user.setEmail(request.getEmail());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setRole(resolveSelfSignupRole(request.getRole()));
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        log.info("Registered {} account for {}", saved.getRole(), saved.getEmail());
+        return saved;
     }
 
     public String authenticateUser(LoginRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
+        } catch (AuthenticationException ex) {
+            // Never log the submitted password, and let the caller map this to a 401.
+            log.warn("Login failed for {}", request.getEmail());
+            throw ex;
+        }
         User user = getUserByEmail(request.getEmail());
+        log.info("Login succeeded for {} ({})", user.getEmail(), user.getRole());
         return tokenProvider.generateToken(user.getEmail(), user.getRole().name());
     }
 
