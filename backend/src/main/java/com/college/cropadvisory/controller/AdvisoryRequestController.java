@@ -1,8 +1,8 @@
 package com.college.cropadvisory.controller;
 
 import com.college.cropadvisory.dto.AdvisoryRequestRequest;
+import com.college.cropadvisory.dto.AdvisoryResponseRequest;
 import com.college.cropadvisory.dto.ApiResponse;
-import com.college.cropadvisory.exception.BadRequestException;
 import com.college.cropadvisory.model.entity.AdvisoryRequest;
 import com.college.cropadvisory.model.entity.User;
 import com.college.cropadvisory.service.AdvisoryRequestService;
@@ -15,7 +15,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/advisory-requests")
@@ -74,13 +73,10 @@ public class AdvisoryRequestController {
     public ResponseEntity<ApiResponse<AdvisoryRequest>> respond(
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody Map<String, String> body) {
+            @Valid @RequestBody AdvisoryResponseRequest request) {
         User officer = userService.getUserByEmail(userDetails.getUsername());
-        String responseText = body.get("responseText");
-        if (responseText == null || responseText.isBlank()) {
-            throw new BadRequestException("responseText is required");
-        }
-        AdvisoryRequest updated = advisoryRequestService.respondToRequest(id, officer, responseText);
+        AdvisoryRequest updated =
+                advisoryRequestService.respondToRequest(id, officer, request.getResponseText());
         return ResponseEntity.ok(new ApiResponse<>(true, "Response submitted", updated));
     }
 

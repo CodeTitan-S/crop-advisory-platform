@@ -2,6 +2,7 @@ package com.college.cropadvisory.controller;
 
 import com.college.cropadvisory.dto.ApiResponse;
 import com.college.cropadvisory.dto.DiseaseReportRequest;
+import com.college.cropadvisory.dto.DiseaseResolutionRequest;
 import com.college.cropadvisory.model.entity.DiseaseReport;
 import com.college.cropadvisory.model.entity.User;
 import com.college.cropadvisory.service.DiseaseReportService;
@@ -14,7 +15,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/disease-reports")
@@ -72,10 +72,10 @@ public class DiseaseReportController {
     public ResponseEntity<ApiResponse<DiseaseReport>> resolveReport(
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody Map<String, String> body) {
+            @Valid @RequestBody DiseaseResolutionRequest request) {
         User officer = userService.getUserByEmail(userDetails.getUsername());
-        String resolutionNotes = body.get("resolutionNotes");
-        DiseaseReport report = diseaseReportService.resolveReport(id, officer, resolutionNotes);
+        DiseaseReport report =
+                diseaseReportService.resolveReport(id, officer, request.getResolutionNotes());
         return ResponseEntity.ok(new ApiResponse<>(true, "Resolved", report));
     }
 }
