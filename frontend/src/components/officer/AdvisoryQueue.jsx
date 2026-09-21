@@ -1,11 +1,25 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { getOfficerQueue, assignRequest, respondToRequest, closeRequest } from '../../api/advisoryService';
 import useFetch from '../../hooks/useFetch';
 import getErrorMessage from '../../utils/errorMessage';
+import { applyQueueControls, formatAge } from '../../utils/queue';
+import QueueToolbar from './QueueToolbar';
+import StatusBadge from '../StatusBadge';
+
+/** Workflow order of the advisory state machine, used for filtering and status sorting. */
+const STATUSES = ['PENDING', 'ASSIGNED', 'RESPONDED', 'CLOSED'];
 
 export default function AdvisoryQueue() {
   const { data, loading, error, refetch } = useFetch(getOfficerQueue, [], 'Failed to load queue');
   const [responseText, setResponseText] = useState({}); // id -> text
+  const [status, setStatus] = useState('ALL');
+  const [sort, setSort] = useState('age-desc');
+
+  const all = data ?? [];
+  const requests = useMemo(
+    () => applyQueueControls(data ?? [], { status, sort }, STATUSES),
+    [data, status, sort]
+  );
 
   const handleAssign = async (id) => {
     try {
@@ -40,13 +54,24 @@ export default function AdvisoryQueue() {
   if (loading) return <p>Loading queue...</p>;
   if (error) return <p className="text-red-600">{error}</p>;
 
-  const requests = data ?? [];
-
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Advisory Requests</h2>
-      {requests.length === 0 ? (
+
+      <QueueToolbar
+        statuses={STATUSES}
+        status={status}
+        onStatusChange={setStatus}
+        sort={sort}
+        onSortChange={setSort}
+        shown={requests.length}
+        total={all.length}
+      />
+
+      {all.length === 0 ? (
         <p>No pending requests.</p>
+      ) : requests.length === 0 ? (
+        <p className="text-gray-500">No {status} requests in the queue.</p>
       ) : (
         <div className="space-y-4">
           {requests.map((req) => (
@@ -54,7 +79,12 @@ export default function AdvisoryQueue() {
               <div className="flex justify-between">
                 <div>
                   <p className="font-semibold">{req.questionText}</p>
-                  <p className="text-sm text-gray-600">Farm ID: {req.farmId} | Status: {req.status}</p>
+                  <p className="text-sm text-gray-600">
+                    Farm ID: {req.farmId} | Age: {formatAge(req.createdAt)}
+                  </p>
+                  <div className="mt-1">
+                    <StatusBadge status={req.status} />
+                  </div>
                 </div>
                 <div className="space-x-2">
                   {req.status === 'PENDING' && (

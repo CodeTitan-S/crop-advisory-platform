@@ -51,7 +51,8 @@ sides a single place to work:
   Status machine: `PENDING → ASSIGNED → RESPONDED → CLOSED`.
 - **Disease reports** — farmer reports a crop issue; officer reviews and resolves.
   Status machine: `REPORTED → UNDER_REVIEW → RESOLVED`.
-- **Officer queue** — all requests and reports, including unassigned ones, in one view.
+- **Officer queue** — all requests and reports, including unassigned ones, in one view, with a
+  status filter and sorting by age (newest/oldest) or by status.
 - **Admin module** — manage user accounts and roles, curate the crop/disease knowledge base, and
   view platform analytics (users by role, requests per week, most reported issues).
 - **Ownership enforcement** — farmers can only reach their own farms' data; officers and admins can
