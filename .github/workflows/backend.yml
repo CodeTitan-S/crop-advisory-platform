@@ -17,20 +17,9 @@ jobs:
     name: Test Backend
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: test_password
-          POSTGRES_DB: crop_advisory_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+    # No database service needed: the test profile uses an in-memory H2 database
+    # (backend/src/test/resources/application-test.properties), so `./mvnw test`
+    # is fully self-contained.
 
     steps:
       - name: Checkout code
@@ -51,18 +40,12 @@ jobs:
         working-directory: ./backend
         env:
           SPRING_PROFILES_ACTIVE: test
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/crop_advisory_test
-          SPRING_DATASOURCE_USERNAME: postgres
-          SPRING_DATASOURCE_PASSWORD: test_password
         run: ./mvnw test
 
       - name: Build application
         working-directory: ./backend
         env:
           SPRING_PROFILES_ACTIVE: test
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/crop_advisory_test
-          SPRING_DATASOURCE_USERNAME: postgres
-          SPRING_DATASOURCE_PASSWORD: test_password
         run: ./mvnw clean package -DskipTests
 
       - name: Upload test results

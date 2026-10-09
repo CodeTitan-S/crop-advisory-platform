@@ -16,13 +16,12 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * The Problem Statement scopes knowledge base curation to Admin only, so every operation here is
- * admin-guarded. Opening reads to officers would mean relaxing this to
- * {@code hasRole('ADMIN') or hasRole('OFFICER')} on the GET methods.
+ * Knowledge base curation (create/update/delete) is Admin-only, per the Problem Statement.
+ * Reads are open to OFFICER as well: officers are the ones advising farmers, so denying them
+ * the reference material made the feature useless to its primary audience.
  */
 @RestController
 @RequestMapping("/api/knowledge-base")
-@PreAuthorize("hasRole('ADMIN')")
 public class KnowledgeBaseController {
 
     private final KnowledgeBaseService knowledgeBaseService;
@@ -35,12 +34,14 @@ public class KnowledgeBaseController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN') or hasRole('OFFICER')")
     public ResponseEntity<ApiResponse<List<KnowledgeBaseEntry>>> getEntries() {
         return ResponseEntity.ok(
                 new ApiResponse<>(true, "Knowledge base entries fetched", knowledgeBaseService.getAll()));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('OFFICER')")
     public ResponseEntity<ApiResponse<KnowledgeBaseEntry>> getEntry(@PathVariable Long id) {
         return ResponseEntity.ok(
                 new ApiResponse<>(true, "Knowledge base entry fetched", knowledgeBaseService.getEntry(id)));

@@ -27,6 +27,13 @@ public class DataSourceConfig {
     @Value("${spring.datasource.password:${DB_PASSWORD:${SPRING_DATASOURCE_PASSWORD:password123}}}")
     private String rawPassword;
 
+    /**
+     * Optional explicit driver. Defaults to PostgreSQL for the app, but the test profile
+     * sets {@code spring.datasource.driver-class-name=org.h2.Driver}, and that choice must win.
+     */
+    @Value("${spring.datasource.driver-class-name:org.postgresql.Driver}")
+    private String driverClassName;
+
     @Bean
     @Primary
     public DataSource dataSource() {
@@ -79,7 +86,7 @@ public class DataSourceConfig {
         if (StringUtils.hasText(password)) {
             config.setPassword(password);
         }
-        config.setDriverClassName("org.postgresql.Driver");
+        config.setDriverClassName(driverClassName);
 
         // Optimized pool settings for cloud instances (Render free tier)
         config.setMaximumPoolSize(5);

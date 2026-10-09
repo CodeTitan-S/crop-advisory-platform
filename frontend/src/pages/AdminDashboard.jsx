@@ -2,6 +2,7 @@ import DashboardTabs from '../components/DashboardTabs';
 
 const TABS = [
   { to: '/admin', label: 'Analytics' },
+  { to: '/admin/oversight', label: 'Oversight' },
   { to: '/admin/users', label: 'Users' },
   { to: '/admin/knowledge-base', label: 'Knowledge Base' },
 ];

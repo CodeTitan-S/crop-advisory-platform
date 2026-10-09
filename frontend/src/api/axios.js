@@ -36,7 +36,14 @@ api.interceptors.response.use(
 /**
  * Unwraps the backend's ApiResponse envelope so callers receive the payload directly.
  * Usage: `unwrap(api.get('/farms'))`
+ * Falls back to the raw body when a response does not carry the `{ data: ... }` envelope
+ * (e.g. a plain string or a different shape), so callers never get `undefined` by surprise.
  */
-export const unwrap = (request) => request.then((response) => response.data.data);
+export const unwrap = (request) =>
+  request.then((response) =>
+    response.data && typeof response.data === 'object' && 'data' in response.data
+      ? response.data.data
+      : response.data
+  );
 
 export default api;

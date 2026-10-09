@@ -25,6 +25,11 @@ export default function SoilReadingForm() {
     const data = Object.fromEntries(
       Object.entries(form).map(([k, v]) => [k, parseFloat(v)])
     );
+    const invalid = Object.entries(data).find(([, v]) => Number.isNaN(v));
+    if (invalid) {
+      setError(`${invalid[0]} must be a number`);
+      return;
+    }
     try {
       await logSoilReading(farmId, data);
       navigate(`/farmer/farms/${farmId}/soil-readings`);

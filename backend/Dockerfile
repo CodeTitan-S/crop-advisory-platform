@@ -17,11 +17,15 @@ RUN ./mvnw clean package -DskipTests
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-# Create non-root user
-RUN addgroup -S spring && adduser -S spring -G spring
+# Create the non-root user, then give it /app and the upload directory. WORKDIR is created as root,
+# so without this chown FileStorageService cannot create uploads/ on startup and the app fails to
+# boot (which is exactly how the photo-upload deploy failed once).
+RUN addgroup -S spring && adduser -S spring -G spring \
+    && mkdir -p /app/uploads \
+    && chown -R spring:spring /app
 USER spring:spring
 
-COPY --from=build /app/target/cropadvisory-0.0.1-SNAPSHOT.jar app.jar
+COPY --chown=spring:spring --from=build /app/target/cropadvisory-0.0.1-SNAPSHOT.jar app.jar
 
 ENV PORT=8080
 EXPOSE 8080

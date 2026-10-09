@@ -14,3 +14,9 @@ export const reviewReport = (id) =>
 
 export const resolveReport = (id, resolutionNotes) =>
   unwrap(api.put(`/disease-reports/${id}/resolve`, { resolutionNotes }));
+
+export const reassignReport = (id, officerId) =>
+  unwrap(api.put(`/disease-reports/${id}/reassign`, { officerId }));
+
+export const adminResolveReport = (id, resolutionNotes) =>
+  unwrap(api.put(`/disease-reports/${id}/admin-resolve`, { resolutionNotes }));

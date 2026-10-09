@@ -256,4 +256,85 @@ class DiseaseReportServiceTest {
         assertThrows(RuntimeException.class,
                 () -> diseaseReportService.resolveReport(200L, officer, "notes"));
     }
+
+    // ─── reassignReport / resolveReportAsAdmin (admin escape hatches) ───
+
+    private User admin() {
+        User admin = new User();
+        admin.setId(30L);
+        admin.setEmail("admin@example.com");
+        admin.setRole(Role.ADMIN);
+        return admin;
+    }
+
+    /** Happy path: admin moves an UNDER_REVIEW report from a departing officer to another. */
+    @Test
+    @DisplayName("reassignReport – success: UNDER_REVIEW report moves to the new officer")
+    void reassignReport_success() {
+        User newOfficer = new User();
+        newOfficer.setId(21L);
+        newOfficer.setRole(Role.OFFICER);
+
+        when(diseaseReportRepository.findById(201L)).thenReturn(Optional.of(underReviewReport));
+        when(diseaseReportRepository.save(any(DiseaseReport.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        DiseaseReport result = diseaseReportService.reassignReport(201L, newOfficer);
+
+        assertEquals(DiseaseStatus.UNDER_REVIEW, result.getStatus());
+        assertEquals(newOfficer, result.getOfficer());
+    }
+
+    /** Happy path: a REPORTED report can be handed straight to a chosen officer. */
+    @Test
+    @DisplayName("reassignReport – success: REPORTED report can be reassigned")
+    void reassignReport_success_reported() {
+        when(diseaseReportRepository.findById(200L)).thenReturn(Optional.of(reportedReport));
+        when(diseaseReportRepository.save(any(DiseaseReport.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        DiseaseReport result = diseaseReportService.reassignReport(200L, officer);
+
+        assertEquals(DiseaseStatus.UNDER_REVIEW, result.getStatus());
+        assertEquals(officer, result.getOfficer());
+    }
+
+    /** Fail: a RESOLVED report is finished — reassignment would rewrite history. */
+    @Test
+    @DisplayName("reassignReport – fail: RESOLVED report cannot be reassigned")
+    void reassignReport_rejectsResolved() {
+        underReviewReport.setStatus(DiseaseStatus.RESOLVED);
+        when(diseaseReportRepository.findById(201L)).thenReturn(Optional.of(underReviewReport));
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> diseaseReportService.reassignReport(201L, officer));
+
+        assertTrue(ex.getMessage().contains("Only REPORTED or UNDER_REVIEW"));
+        verify(diseaseReportRepository, never()).save(any());
+    }
+
+    /** Happy path: admin resolves a report whose assigned officer is unreachable. */
+    @Test
+    @DisplayName("resolveReportAsAdmin – success: admin resolves regardless of assignee")
+    void resolveReportAsAdmin_success() {
+        when(diseaseReportRepository.findById(201L)).thenReturn(Optional.of(underReviewReport));
+        when(diseaseReportRepository.save(any(DiseaseReport.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        DiseaseReport result = diseaseReportService.resolveReportAsAdmin(201L, admin(), "Applied fungicide.");
+
+        assertEquals(DiseaseStatus.RESOLVED, result.getStatus());
+        assertEquals("Applied fungicide.", result.getResolutionNotes());
+        assertNotNull(result.getResolvedAt());
+    }
+
+    /** Fail: admin cannot resolve a report that is still REPORTED (not picked up yet). */
+    @Test
+    @DisplayName("resolveReportAsAdmin – fail: report must be UNDER_REVIEW")
+    void resolveReportAsAdmin_rejectsReported() {
+        when(diseaseReportRepository.findById(200L)).thenReturn(Optional.of(reportedReport));
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> diseaseReportService.resolveReportAsAdmin(200L, admin(), "notes"));
+
+        assertEquals("Report must be UNDER_REVIEW", ex.getMessage());
+        verify(diseaseReportRepository, never()).save(any());
+    }
 }

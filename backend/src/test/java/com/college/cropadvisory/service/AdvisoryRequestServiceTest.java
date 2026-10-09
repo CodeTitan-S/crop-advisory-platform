@@ -316,4 +316,49 @@ class AdvisoryRequestServiceTest {
 
         assertEquals("Request must be RESPONDED before closing", ex.getMessage());
     }
+
+    // ─── reassignRequest (admin escape hatch) ───────────────────────────
+
+    /** Happy path: admin moves an ASSIGNED request to a different officer. */
+    @Test
+    @DisplayName("reassignRequest – success: ASSIGNED request moves to the new officer")
+    void reassignRequest_success_assigned() {
+        User newOfficer = new User();
+        newOfficer.setId(20L);
+        newOfficer.setRole(Role.OFFICER);
+
+        when(advisoryRequestRepository.findById(101L)).thenReturn(Optional.of(assignedRequest));
+        when(advisoryRequestRepository.save(any(AdvisoryRequest.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        AdvisoryRequest result = advisoryRequestService.reassignRequest(101L, newOfficer);
+
+        assertEquals(AdvisoryStatus.ASSIGNED, result.getStatus());
+        assertEquals(newOfficer, result.getOfficer());
+    }
+
+    /** Happy path: a PENDING request can also be pointed at a specific officer. */
+    @Test
+    @DisplayName("reassignRequest – success: PENDING request can be reassigned")
+    void reassignRequest_success_pending() {
+        when(advisoryRequestRepository.findById(100L)).thenReturn(Optional.of(pendingRequest));
+        when(advisoryRequestRepository.save(any(AdvisoryRequest.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        AdvisoryRequest result = advisoryRequestService.reassignRequest(100L, officer);
+
+        assertEquals(AdvisoryStatus.ASSIGNED, result.getStatus());
+        assertEquals(officer, result.getOfficer());
+    }
+
+    /** Fail: a RESPONDED request is in the farmer's court — reassignment is meaningless there. */
+    @Test
+    @DisplayName("reassignRequest – fail: RESPONDED request cannot be reassigned")
+    void reassignRequest_rejectsResponded() {
+        when(advisoryRequestRepository.findById(102L)).thenReturn(Optional.of(respondedRequest));
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> advisoryRequestService.reassignRequest(102L, officer));
+
+        assertTrue(ex.getMessage().contains("Only PENDING or ASSIGNED"));
+        verify(advisoryRequestRepository, never()).save(any());
+    }
 }

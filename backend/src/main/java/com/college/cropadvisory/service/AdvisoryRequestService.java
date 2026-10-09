@@ -51,6 +51,23 @@ public class AdvisoryRequestService {
         return advisoryRequestRepository.save(req);
     }
 
+    /**
+     * Admin-only reassignment: moves a PENDING or ASSIGNED request to another officer. This is
+     * the escape hatch for an officer who is on leave or has left — without it such a request
+     * could never leave the ASSIGNED state, since only the assignee may respond.
+     */
+    public AdvisoryRequest reassignRequest(Long requestId, User newOfficer) {
+        AdvisoryRequest req = getRequest(requestId);
+        if (req.getStatus() != AdvisoryStatus.PENDING
+                && req.getStatus() != AdvisoryStatus.ASSIGNED) {
+            throw new ConflictException(
+                    "Only PENDING or ASSIGNED requests can be reassigned (current: " + req.getStatus() + ")");
+        }
+        req.setOfficer(newOfficer);
+        req.setStatus(AdvisoryStatus.ASSIGNED);
+        return advisoryRequestRepository.save(req);
+    }
+
     public AdvisoryRequest respondToRequest(Long requestId, User officer, String responseText) {
         AdvisoryRequest req = getRequest(requestId);
         requireAssignedTo(req, officer);

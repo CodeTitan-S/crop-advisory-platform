@@ -18,6 +18,9 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -25,6 +28,8 @@ import java.util.List;
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
+
+    private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
 
     private final JwtAuthenticationFilter jwtAuthFilter;
 
@@ -61,8 +66,21 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Parse comma-separated origins from environment variable
-        List<String> origins = Arrays.asList(allowedOrigins.split(","));
+        // Parse comma-separated origins from the environment variable, trimming whitespace and
+        // dropping empties. Without this a value like "https://app.vercel.app/," produces an
+        // origin with a trailing slash/empty entry that can never match, and every browser
+        // request fails CORS with no obvious cause.
+        List<String> origins = Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                // Browsers never send a trailing slash in Origin, so strip it defensively.
+                .map(origin -> origin.endsWith("/") ? origin.substring(0, origin.length() - 1) : origin)
+                .toList();
+        if (origins.isEmpty()) {
+            log.warn("app.cors.allowed-origins is empty or unset - browser requests will fail CORS");
+        } else {
+            log.info("CORS allowed origins: {}", origins);
+        }
         configuration.setAllowedOrigins(origins);
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("*"));

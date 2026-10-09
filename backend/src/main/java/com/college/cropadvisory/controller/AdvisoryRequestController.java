@@ -3,6 +3,7 @@ package com.college.cropadvisory.controller;
 import com.college.cropadvisory.dto.AdvisoryRequestRequest;
 import com.college.cropadvisory.dto.AdvisoryResponseRequest;
 import com.college.cropadvisory.dto.ApiResponse;
+import com.college.cropadvisory.dto.ReassignRequest;
 import com.college.cropadvisory.model.entity.AdvisoryRequest;
 import com.college.cropadvisory.model.entity.User;
 import com.college.cropadvisory.service.AdvisoryRequestService;
@@ -50,7 +51,7 @@ public class AdvisoryRequestController {
     }
 
     @GetMapping("/queue")
-    @PreAuthorize("hasRole('OFFICER')")
+    @PreAuthorize("hasRole('OFFICER') or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<AdvisoryRequest>>> getOfficerQueue(
             @AuthenticationPrincipal UserDetails userDetails) {
         User officer = userService.getUserByEmail(userDetails.getUsername());
@@ -66,6 +67,17 @@ public class AdvisoryRequestController {
         User officer = userService.getUserByEmail(userDetails.getUsername());
         AdvisoryRequest updated = advisoryRequestService.assignToOfficer(id, officer);
         return ResponseEntity.ok(new ApiResponse<>(true, "Request assigned", updated));
+    }
+
+    /** Admin escape hatch: hand a stuck PENDING/ASSIGNED request to another officer. */
+    @PutMapping("/{id}/reassign")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<AdvisoryRequest>> reassignRequest(
+            @PathVariable Long id,
+            @Valid @RequestBody ReassignRequest request) {
+        User newOfficer = userService.getUserById(request.getOfficerId());
+        AdvisoryRequest updated = advisoryRequestService.reassignRequest(id, newOfficer);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Request reassigned", updated));
     }
 
     @PutMapping("/{id}/respond")

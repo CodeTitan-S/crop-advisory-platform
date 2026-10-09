@@ -63,7 +63,7 @@ public class AdminSeeder implements ApplicationRunner {
             log.info("An admin account already exists - skipping admin bootstrap");
             return false;
         }
-        if (Boolean.TRUE.equals(userRepository.existsByEmail(adminEmail))) {
+        if (userRepository.existsByEmail(adminEmail)) {
             log.warn("A user already exists with ADMIN_EMAIL {} - not promoting it automatically. "
                     + "Change their role from the admin user list instead.", adminEmail);
             return false;

@@ -59,9 +59,12 @@ public class GlobalExceptionHandler {
             MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach(error -> {
-            String field = ((FieldError) error).getField();
-            String message = error.getDefaultMessage();
-            errors.put(field, message);
+            // Class-level constraints (not tied to one field) have no FieldError; key them
+            // by the object name so they still reach the client instead of blowing up here.
+            String field = error instanceof FieldError fieldError
+                    ? fieldError.getField()
+                    : error.getObjectName();
+            errors.put(field, error.getDefaultMessage());
         });
         return ResponseEntity.badRequest()
                 .body(new ApiResponse<>(false, "Validation failed", errors));

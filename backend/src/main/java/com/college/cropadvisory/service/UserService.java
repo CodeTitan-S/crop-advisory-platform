@@ -85,6 +85,12 @@ public class UserService {
                 .orElseThrow(() -> new NotFoundException("User not found"));
     }
 
+    /** Loads a user by id or fails with 404. Used by admin reassignment to resolve the target officer. */
+    public User getUserById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+    }
+
     /** An unknown role is a malformed request (400); a known but privileged one is forbidden (403). */
     private Role resolveSelfSignupRole(String requested) {
         Role role;

@@ -52,6 +52,39 @@ public class DiseaseReportService {
         return diseaseReportRepository.save(report);
     }
 
+    /**
+     * Admin-only reassignment: moves a REPORTED or UNDER_REVIEW report to another officer.
+     * Without this, an officer who leaves with reports UNDER_REVIEW strands them — only the
+     * assignee may resolve, and no one else could take over.
+     */
+    public DiseaseReport reassignReport(Long reportId, User newOfficer) {
+        DiseaseReport report = getReport(reportId);
+        if (report.getStatus() != DiseaseStatus.REPORTED
+                && report.getStatus() != DiseaseStatus.UNDER_REVIEW) {
+            throw new ConflictException(
+                    "Only REPORTED or UNDER_REVIEW reports can be reassigned (current: " + report.getStatus() + ")");
+        }
+        report.setOfficer(newOfficer);
+        report.setStatus(DiseaseStatus.UNDER_REVIEW);
+        return diseaseReportRepository.save(report);
+    }
+
+    /**
+     * Admin override of {@link #resolveReport}: resolves a report regardless of who it is
+     * assigned to. For the rare case where the assigned officer is unreachable but the farmer
+     * still deserves a resolution rather than a report stuck in UNDER_REVIEW forever.
+     */
+    public DiseaseReport resolveReportAsAdmin(Long reportId, User admin, String resolutionNotes) {
+        DiseaseReport report = getReport(reportId);
+        if (report.getStatus() != DiseaseStatus.UNDER_REVIEW) {
+            throw new ConflictException("Report must be UNDER_REVIEW");
+        }
+        report.setStatus(DiseaseStatus.RESOLVED);
+        report.setResolutionNotes(resolutionNotes);
+        report.setResolvedAt(LocalDateTime.now());
+        return diseaseReportRepository.save(report);
+    }
+
     public DiseaseReport resolveReport(Long reportId, User officer, String resolutionNotes) {
         DiseaseReport report = getReport(reportId);
         if (report.getOfficer() == null || !report.getOfficer().getId().equals(officer.getId())) {

@@ -17,3 +17,6 @@ export const respondToRequest = (id, responseText) =>
 
 export const closeRequest = (id) =>
   unwrap(api.put(`/advisory-requests/${id}/close`));
+
+export const reassignRequest = (id, officerId) =>
+  unwrap(api.put(`/advisory-requests/${id}/reassign`, { officerId }));

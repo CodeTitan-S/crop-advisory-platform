@@ -14,8 +14,13 @@ export default function FarmCreate() {
     e.preventDefault();
     setError('');
     setSuccess('');
+    const parsedSize = parseFloat(size);
+    if (Number.isNaN(parsedSize)) {
+      setError('Size must be a number, e.g. 2.5');
+      return;
+    }
     try {
-      await createFarm({ location, size: parseFloat(size), soilType });
+      await createFarm({ location, size: parsedSize, soilType });
       setSuccess('Farm created successfully!');
       setTimeout(() => navigate('/farmer'), 1500); // redirect to farm list after 1.5s
     } catch (err) {
