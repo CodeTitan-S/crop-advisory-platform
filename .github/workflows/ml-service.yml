@@ -1,0 +1,46 @@
+name: ML Service CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'ml-service/**'
+      - '.github/workflows/ml-service.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'ml-service/**'
+      - '.github/workflows/ml-service.yml'
+
+jobs:
+  test:
+    name: Test ML Service
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./ml-service
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest app/test_main.py
+
+  deploy:
+    name: Deploy ML Service
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Trigger Render Deploy Hook
+        run: |
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_ML }}"
