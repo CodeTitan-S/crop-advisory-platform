@@ -12,7 +12,9 @@ public interface KnowledgeBaseEntryRepository extends JpaRepository<KnowledgeBas
 
     List<KnowledgeBaseEntry> findAllByOrderByCropOrDiseaseNameAsc();
 
-    List<KnowledgeBaseEntry> findByCropOrDiseaseNameContainingIgnoreCase(String query);
+    @Query("SELECT e FROM KnowledgeBaseEntry e "
+            + "WHERE LOWER(e.cropOrDiseaseName) LIKE LOWER(CONCAT('%', :query, '%'))")
+    List<KnowledgeBaseEntry> findByCropOrDiseaseNameContainingIgnoreCase(@Param("query") String query);
 
     /**
      * Case-insensitive duplicate-name check.
