@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Officer as Officer (React SPA)
+    participant Backend as Spring Boot API
+    participant MLService as FastAPI ML Service
+    participant DB as PostgreSQL
+
+    Officer->>Backend: GET /advisory-requests/{id} (load request details)
+    Backend->>DB: Fetch advisory request and farm
+    DB-->>Backend: Return farm and request
+    Backend-->>Officer: Return request data + latest soil reading
+
+    Officer->>Backend: POST /advisory-requests/{id}/respond (with response text)
+    Backend->>Backend: Validate request and officer
+    Backend->>MLService: POST /predict (with soil reading data: N, P, K, pH, rainfall, temperature)
+    MLService->>MLService: Load model, predict top 3 crops
+    MLService-->>Backend: Return top 3 crop suggestions
+    Backend->>Backend: Save advisory request response with AI suggestions
+    Backend-->>Officer: Return success + AI suggestions displayed in UI

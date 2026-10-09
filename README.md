@@ -2,6 +2,7 @@
 
 ![Backend CI](https://github.com/CodeTitan-S/crop-advisory-platform/actions/workflows/backend.yml/badge.svg)
 ![Frontend CI](https://github.com/CodeTitan-S/crop-advisory-platform/actions/workflows/frontend.yml/badge.svg)
+![ML Service CI](https://github.com/CodeTitan-S/crop-advisory-platform/actions/workflows/ml-service.yml/badge.svg)
 
 A web platform connecting farmers with agricultural officers for advisory requests, disease
 reporting and soil-driven guidance — replacing informal phone-call advisory with a structured,
@@ -9,6 +10,7 @@ trackable workflow.
 
 - **Frontend:** React 19 + Vite + Tailwind CSS 4
 - **Backend:** Spring Boot 3.3 (Java 17) + Spring Security + JWT
+- **ML Service:** FastAPI (Python 3.11) + Scikit-learn + Pandas
 - **Database:** PostgreSQL 15
 
 ---
@@ -21,6 +23,7 @@ trackable workflow.
 | REST API | https://cropadvisory-backend-08uh.onrender.com/api |
 | Health check | https://cropadvisory-backend-08uh.onrender.com/actuator/health |
 | API docs (Swagger UI) | https://cropadvisory-backend-08uh.onrender.com/swagger-ui.html |
+| ML Service Health | https://cropadvisory-ml-service.onrender.com/health |
 
 > **The first request may take up to ~90 seconds.** The backend runs on Render's free tier, which
 > spins the container down after 15 minutes of inactivity. Open the health check link a minute or
@@ -39,6 +42,8 @@ sides a single place to work:
 - Officers work a queue of requests and reports, respond with guidance, and drive each item through
   its status workflow.
 - Admins manage users, curate a crop/disease knowledge base and view platform analytics.
+- **AI Crop Recommendation:** Officers receive AI-powered top-3 crop suggestions based on soil
+  readings when responding to advisory requests, powered by a dedicated microservice.
 
 ## Features
 
@@ -56,6 +61,10 @@ sides a single place to work:
   status filter and sorting by age (newest/oldest) or by status.
 - **Admin module** — manage user accounts and roles, curate the crop/disease knowledge base, and
   view platform analytics (users by role, requests per week, most reported issues).
+- **AI Crop Recommendation** — when an officer responds to an advisory request, the backend calls
+  an external ML microservice that returns the top-3 recommended crops for the farm's latest soil
+  reading, enabling data‑driven advice.
+- **Knowledge Base** — searchable repository of crop/disease information and remedies.
 - **Ownership enforcement** — farmers can only reach their own farms' data; officers and admins can
   read any farm. Enforced in the service layer, not just the UI.
 
@@ -67,14 +76,14 @@ sides a single place to work:
 
 The React SPA calls the Spring Boot REST API over HTTPS with a bearer JWT. The API persists to
 PostgreSQL through Spring Data JPA and exposes `/actuator/health` for the platform health check.
-See [`docs/diagram/`](docs/diagram/) for the ER and class diagrams. The Phase 3 ML microservice is
-marked on the architecture diagram as a future component.
+The backend also communicates with a dedicated ML microservice (FastAPI) for AI crop
+recommendations. See [`docs/diagram/`](docs/diagram/) for the ER, class, and sequence diagrams.
 
-Each diagram is kept as Mermaid source (`.mmd`) next to its PNG, so it can be reviewed in a diff and
-regenerated from the code rather than redrawn by hand:
+Each diagram is kept as Mermaid source (`.mmd`) next to its PNG, so it can be reviewed in a diff
+and regenerated from the code rather than redrawn by hand:
 
 ```bash
-npx -y @mermaid-js/mermaid-cli -i docs/diagram/er-diagram.mmd -o docs/diagram/er-diagram.png -b white -w 1800
+npx -y @mermaid-js/mermaid-cli -i docs/diagram/architecture-diagram.mmd -o docs/diagram/architecture-diagram.png -b white -w 1800
 ```
 
 ---
@@ -85,13 +94,14 @@ npx -y @mermaid-js/mermaid-cli -i docs/diagram/er-diagram.mmd -o docs/diagram/er
 |---|---|
 | Frontend | React 19, Vite 8, Tailwind CSS 4, React Router 7, Axios |
 | Backend | Spring Boot 3.3.5, Java 17, Spring Web, Spring Data JPA |
+| ML Service | FastAPI 0.115.0, Uvicorn 0.32.0, Scikit-learn 1.5.2, Pandas 2.2.3 |
 | Auth | Spring Security, JWT (jjwt 0.12.5), BCrypt |
 | Database | PostgreSQL 15 |
 | API docs | springdoc-openapi (`/swagger-ui.html`) |
 | Build | Maven (wrapper included), npm |
-| Testing | JUnit 5, Mockito, JaCoCo |
+| Testing | JUnit 5, Mockito, JaCoCo, pytest |
 | CI/CD | GitHub Actions |
-| Hosting | Render (API + Postgres), Vercel (SPA) |
+| Hosting | Render (API + ML Service + Postgres), Vercel (SPA) |
 
 ---
 
@@ -102,6 +112,7 @@ npx -y @mermaid-js/mermaid-cli -i docs/diagram/er-diagram.mmd -o docs/diagram/er
 - **Java 17** (`java -version`)
 - **Node.js 20.19+ or 22.12+** — required by Vite 8 (`node -v`)
 - **PostgreSQL 15** running locally, or **Docker** to use the bundled compose file
+- **Python 3.11** (for ML service development) — optional if only consuming the deployed service
 
 Maven is not required — the Maven wrapper (`./mvnw`) is committed.
 
@@ -128,7 +139,21 @@ The API starts on http://localhost:8080. Verify it with:
 curl http://localhost:8080/actuator/health
 ```
 
-### 3. Run the frontend
+### 3. Run the ML service (optional, for local development)
+
+```bash
+cd ml-service
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+The ML service starts on http://localhost:8000. Verify it with:
+
+```bash
+curl http://localhost:8000/health
+```
+
+### 4. Run the frontend
 
 ```bash
 cd frontend
@@ -156,6 +181,7 @@ Alternatively, set the variables in your IDE's run configuration.
 
 ```bash
 cd backend && ./mvnw test          # unit tests + coverage gate
+cd ml-service && pytest app/test_main.py  # ML service tests
 cd frontend && npm run lint        # ESLint
 cd frontend && npm run build       # production build
 ```
@@ -188,6 +214,13 @@ coverage drops below it. The current figure is **92.6%**, and a full HTML report
 | `ADMIN_EMAIL` | No | — | Creates the first ADMIN account on startup. Requires `ADMIN_PASSWORD` too, and is skipped once any admin exists. See [Admin bootstrap](#admin-bootstrap) |
 | `ADMIN_PASSWORD` | No | — | Password for the bootstrapped admin account. Set both or neither |
 | `PORT` | No | `8080` | HTTP port. Render injects this automatically |
+| `ML_SERVICE_URL` | No | `http://localhost:8000` | Base URL of the ML microservice used by `MlServiceClient`. In production, set to the Render deployment URL. |
+
+### ML Service
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `PORT` | No | `8000` | Port to run the ML service on. Render injects this automatically. |
 
 ### Frontend
 
@@ -241,9 +274,9 @@ else requires an `Authorization: Bearer <token>` header.
 
 ## Deployment
 
-The stack runs as three pieces: a Render web service (API), a Render PostgreSQL instance, and a
-Vercel static site (SPA). Both platforms deploy automatically from `main` through their own Git
-integrations, so no deploy secrets are needed in GitHub Actions.
+The stack runs as four pieces: a Render web service (API), a Render web service (ML Service), a
+Render PostgreSQL instance, and a Vercel static site (SPA). Both platforms deploy automatically from
+`main` through their own Git integrations, so no deploy secrets are needed in GitHub Actions.
 
 ### Backend — Render
 
@@ -265,8 +298,21 @@ integrations, so no deploy secrets are needed in GitHub Actions.
    | `DATABASE_URL` | from the `cropadvisory-db` database |
    | `ADMIN_EMAIL` | set manually (declared `sync: false`) |
    | `ADMIN_PASSWORD` | set manually (declared `sync: false`) |
+   | `ML_SERVICE_URL` | `https://cropadvisory-ml-service.onrender.com` (set manually) |
 
 4. The health check path is `/actuator/health`. Once it reports `{"status":"UP"}`, the API is live.
+
+### ML Service — Render
+
+The ML service is deployed as a separate Render web service.
+
+1. In the Render dashboard choose **New → Web Service** and connect this repository.
+2. Set the **Environment** to `Python 3`.
+3. Set the **Build Command** to: `pip install -r requirements.txt`
+4. Set the **Start Command** to: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+5. Under **Environment**, add:
+   - `PORT` (Render will fill this in)
+6. Deploy. The service will be available at the Render-provided URL on port `$PORT`.
 
 ### Frontend — Vercel
 
@@ -288,6 +334,8 @@ integrations, so no deploy secrets are needed in GitHub Actions.
 
 - **CORS:** the deployed frontend origin must appear in the backend's `FRONTEND_URL`, without a
   trailing slash. A missing origin surfaces as a browser CORS error, not a server error.
+- **ML Service CORS:** the backend's `ML_SERVICE_URL` must be reachable; the ML service itself
+  does not require CORS as it is called only from the backend.
 - **Cold starts:** the free tier sleeps after 15 minutes idle and can take ~90 seconds to wake.
 - **Database credentials:** Render's `DATABASE_URL` includes the password and `DataSourceConfig`
   parses it apart. Never commit a real connection string.
@@ -299,13 +347,15 @@ integrations, so no deploy secrets are needed in GitHub Actions.
 
 ```
 .
-├── .github/workflows/       backend.yml (Maven build + test + coverage), frontend.yml (lint + build)
+├── .github/workflows/       backend.yml (Maven build + test + coverage), frontend.yml (lint + build), ml-service.yml (pytest + deploy)
 ├── backend/
 │   ├── src/main/java/com/college/cropadvisory/
 │   │   ├── config/          SecurityConfig, JwtTokenProvider, JwtAuthenticationFilter,
 │   │   │                    DataSourceConfig, AdminSeeder
 │   │   ├── controller/      REST endpoints (thin — no business logic)
-│   │   ├── service/         business logic and authorization
+│   │   ├── service/         business logic and authorization (UserService, FarmService, SoilReadingService,
+│   │   │                    SeasonLogService, AdvisoryRequestService, DiseaseReportService, AdminService,
+│   │   │                    KnowledgeBaseService, MlServiceClient, AnalyticsService)
 │   │   ├── repository/      Spring Data JPA interfaces
 │   │   ├── model/entity/    User, Farm, SoilReading, SeasonLog, AdvisoryRequest, DiseaseReport, KnowledgeBaseEntry
 │   │   ├── dto/             request/response objects
@@ -319,12 +369,23 @@ integrations, so no deploy secrets are needed in GitHub Actions.
 │   ├── src/hooks/           useFetch
 │   ├── src/pages/           Login, Signup, dashboards
 │   └── vercel.json          SPA rewrite configuration
-├── docs/diagram/            architecture, ER and class diagrams (.mmd source + rendered .png)
+├── ml-service/
+│   ├── app/
+│   │   ├── main.py          FastAPI app definition and `/predict`, `/health` endpoints
+│   │   ├── model_loader.py  Singleton that loads the trained RandomForest model
+│   │   ├── schemas.py       Pydantic models for request/response
+│   │   └── test_main.py     pytest for the ML service
+│   ├── model/               Pickled RandomForest model (not committed; generated by ml/train_model.py)
+│   └── requirements.txt     Python dependencies (fastapi, uvicorn, scikit-learn, pandas, pytest, etc.)
+├── docs/diagram/            architecture, ER, class, and sequence diagrams (.mmd source + rendered .png)
 ├── docker-compose.yml       local PostgreSQL 15
+├── ml/
+│   └── train_model.py       Script to train the RandomForest model on the Kaggle dataset
 ├── render.yaml              Render Blueprint (API + database)
 ├── RENDER_DEPLOYMENT.md     deployment and troubleshooting guide
 ├── CHANGELOG.md             release history
-└── LICENSE                  MIT
+├── LICENSE                  MIT
+└── README.md
 ```
 
 ---
@@ -335,6 +396,7 @@ integrations, so no deploy secrets are needed in GitHub Actions.
 - [Architecture diagram](docs/diagram/architecture-diagram.png)
 - [ER diagram](docs/diagram/er-diagram.png)
 - [Class diagram](docs/diagram/class-diagram.png)
+- [AI suggestion sequence diagram](docs/diagram/ai-suggestion-sequence.png)
 - [Deployment guide](RENDER_DEPLOYMENT.md)
 - [Changelog](CHANGELOG.md)
 

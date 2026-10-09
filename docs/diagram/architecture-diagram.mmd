@@ -18,7 +18,7 @@ flowchart LR
     end
 
     db[("PostgreSQL 15<br/>Render managed")]
-    ml["ML microservice — Phase 3 (Day 42-60)<br/>Python · FastAPI · POST /predict<br/>not yet built"]
+    ml["ML Microservice (Render)<br/>Python · FastAPI · POST /predict"]
 
     pages --> axios
     axios -->|"HTTPS + Bearer JWT"| security
@@ -28,8 +28,6 @@ flowchart LR
     repos --> db
     services --> storage
     axios -.->|"GET /api/files/{name}<br/>photo served for img tag"| storage
-    services -.->|"latest SoilReading in,<br/>ranked crops out"| ml
+    services -->|"latest SoilReading in,<br/>ranked crops out"| ml
     health -.->|"datasource check"| db
 
-    classDef phase3 stroke-dasharray: 6 4,stroke-width:1.5px;
-    class ml phase3;

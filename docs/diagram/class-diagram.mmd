@@ -80,11 +80,17 @@ classDiagram
             +deleteUser(admin, userId) void
             +getAnalytics() AnalyticsResponse
         }
+        class AnalyticsService {
+            +getAnalytics() AnalyticsResponse
+        }
         class KnowledgeBaseService {
             +getAll() List~KnowledgeBaseEntry~
             +create(admin, request) KnowledgeBaseEntry
             +update(id, request) KnowledgeBaseEntry
             +delete(id) void
+        }
+        class MlServiceClient {
+            +predictCropSoilSoilReading() List~CropSuggestion~
         }
         class FileStorageService {
             +store(file) String
@@ -205,6 +211,8 @@ classDiagram
     AdminService --> AdvisoryRequestRepository
     AdminService --> DiseaseReportRepository
     KnowledgeBaseService --> KnowledgeBaseEntryRepository
+    AdminService --> AnalyticsService
+    AdvisoryRequestService --> MlServiceClient
 
     UserService --> UserRepository
     FarmService --> FarmRepository

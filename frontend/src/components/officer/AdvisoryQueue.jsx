@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { getOfficerQueue, assignRequest, respondToRequest, closeRequest } from '../../api/advisoryService';
+import { getOfficerQueue, assignRequest, respondToRequest, closeRequest, suggestCrop } from '../../api/advisoryService';
 import useFetch from '../../hooks/useFetch';
 import getErrorMessage from '../../utils/errorMessage';
 import { applyQueueControls, formatAge } from '../../utils/queue';
@@ -51,6 +51,23 @@ export default function AdvisoryQueue() {
     }
   };
 
+  const handleSuggest = async (id) => {
+    try {
+      await suggestCrop(id);
+      refetch();
+    } catch (err) {
+      alert(getErrorMessage(err, 'Error'));
+    }
+  };
+
+  const parseSuggestion = (jsonStr) => {
+    try {
+      return JSON.parse(jsonStr);
+    } catch {
+      return null;
+    }
+  };
+
   if (loading) return <p>Loading queue...</p>;
   if (error) return <p className="text-red-600">{error}</p>;
 
@@ -97,6 +114,27 @@ export default function AdvisoryQueue() {
                   )}
                   {req.status === 'ASSIGNED' && (
                     <>
+                      {req.aiSuggestion ? (
+                        <button
+                          onClick={() => {
+                            const suggestions = parseSuggestion(req.aiSuggestion);
+                            const text = suggestions
+                              ?.map((s) => `${s.crop} (${(s.confidence * 100).toFixed(0)}%)`)
+                              .join(', ');
+                            setResponseText((prev) => ({ ...prev, [req.id]: text || 'AI Sug: ' + req.aiSuggestion }));
+                          }}
+                          className="bg-purple-500 text-white px-3 py-1 rounded text-sm"
+                        >
+                          Use Suggestion
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleSuggest(req.id)}
+                          className="bg-purple-600 text-white px-3 py-1 rounded text-sm"
+                        >
+                          Suggest Crop
+                        </button>
+                      )}
                       <input
                         type="text"
                         placeholder="Response..."
@@ -122,6 +160,18 @@ export default function AdvisoryQueue() {
                   )}
                 </div>
               </div>
+              {req.aiSuggestion && (
+                <div className="mt-2 text-sm bg-purple-50 p-2 rounded border border-purple-200">
+                  <p className="font-semibold text-purple-800">AI Crop Suggestions:</p>
+                  <ul className="flex flex-wrap gap-2 mt-1">
+                    {parseSuggestion(req.aiSuggestion)?.map((s, i) => (
+                      <li key={i} className="bg-white px-2 py-1 rounded shadow-sm border border-purple-100">
+                        {s.crop} <span className="text-gray-500">{(s.confidence * 100).toFixed(0)}%</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {req.responseText && (
                 <p className="mt-2 text-sm text-gray-700"><strong>Response:</strong> {req.responseText}</p>
               )}

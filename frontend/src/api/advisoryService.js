@@ -20,3 +20,6 @@ export const closeRequest = (id) =>
 
 export const reassignRequest = (id, officerId) =>
   unwrap(api.put(`/advisory-requests/${id}/reassign`, { officerId }));
+
+export const suggestCrop = (id) =>
+  unwrap(api.post(`/advisory-requests/${id}/suggest-crop`));
