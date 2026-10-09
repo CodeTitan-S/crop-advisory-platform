@@ -23,6 +23,10 @@ public class KnowledgeBaseService {
         return knowledgeBaseEntryRepository.findAllByOrderByCropOrDiseaseNameAsc();
     }
 
+    public List<KnowledgeBaseEntry> search(String query) {
+        return knowledgeBaseEntryRepository.findByCropOrDiseaseNameContainingIgnoreCase(query);
+    }
+
     public KnowledgeBaseEntry getEntry(Long id) {
         return knowledgeBaseEntryRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Knowledge base entry not found"));

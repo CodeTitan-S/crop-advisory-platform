@@ -59,6 +59,16 @@ public class AdvisoryRequestController {
         return ResponseEntity.ok(new ApiResponse<>(true, "Queue fetched", list));
     }
 
+    @PostMapping("/{id}/suggest-crop")
+    @PreAuthorize("hasRole('OFFICER')")
+    public ResponseEntity<ApiResponse<AdvisoryRequest>> suggestCrop(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        User officer = userService.getUserByEmail(userDetails.getUsername());
+        AdvisoryRequest updated = advisoryRequestService.suggestCrop(id, officer);
+        return ResponseEntity.ok(new ApiResponse<>(true, "AI suggestion generated", updated));
+    }
+
     @PutMapping("/{id}/assign")
     @PreAuthorize("hasRole('OFFICER')")
     public ResponseEntity<ApiResponse<AdvisoryRequest>> assignToMe(

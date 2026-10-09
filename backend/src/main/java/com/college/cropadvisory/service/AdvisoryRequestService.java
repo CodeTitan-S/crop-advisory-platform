@@ -1,25 +1,61 @@
 package com.college.cropadvisory.service;
 
+import com.college.cropadvisory.client.MlServiceClient;
+import com.college.cropadvisory.exception.BadRequestException;
 import com.college.cropadvisory.exception.ConflictException;
 import com.college.cropadvisory.exception.ForbiddenException;
 import com.college.cropadvisory.exception.NotFoundException;
 import com.college.cropadvisory.model.entity.*;
 import com.college.cropadvisory.repository.AdvisoryRequestRepository;
+import com.college.cropadvisory.repository.SoilReadingRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class AdvisoryRequestService {
 
     private final AdvisoryRequestRepository advisoryRequestRepository;
     private final FarmService farmService;
+    private final SoilReadingRepository soilReadingRepository;
+    private final MlServiceClient mlServiceClient;
+    private final ObjectMapper objectMapper;
 
     public AdvisoryRequestService(AdvisoryRequestRepository advisoryRequestRepository,
-                                  FarmService farmService) {
+                                  FarmService farmService,
+                                  SoilReadingRepository soilReadingRepository,
+                                  MlServiceClient mlServiceClient,
+                                  ObjectMapper objectMapper) {
         this.advisoryRequestRepository = advisoryRequestRepository;
         this.farmService = farmService;
+        this.soilReadingRepository = soilReadingRepository;
+        this.mlServiceClient = mlServiceClient;
+        this.objectMapper = objectMapper;
+    }
+
+    @Transactional
+    public AdvisoryRequest suggestCrop(Long requestId, User officer) {
+        AdvisoryRequest req = getRequest(requestId);
+        requireAssignedTo(req, officer);
+
+        List<SoilReading> readings = soilReadingRepository.findByFarmOrderByRecordedAtDesc(req.getFarm());
+        if (readings.isEmpty()) {
+            throw new BadRequestException("No soil readings for this farm");
+        }
+
+        SoilReading latest = readings.get(0);
+        Map<String, Object> suggestion = mlServiceClient.getSuggestions(latest);
+
+        try {
+            req.setAiSuggestion(objectMapper.writeValueAsString(suggestion.get("recommendations")));
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialize AI suggestion", e);
+        }
+        return advisoryRequestRepository.save(req);
     }
 
     public AdvisoryRequest submitRequest(User farmer, Long farmId, String question) {

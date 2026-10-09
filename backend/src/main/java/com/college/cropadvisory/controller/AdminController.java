@@ -34,6 +34,11 @@ public class AdminController {
         return ResponseEntity.ok(new ApiResponse<>(true, "Users fetched", adminService.getAllUsers()));
     }
 
+    @GetMapping("/users/{userId}")
+    public ResponseEntity<ApiResponse<UserSummaryResponse>> getUser(@PathVariable Long userId) {
+        return ResponseEntity.ok(new ApiResponse<>(true, "User fetched", adminService.getUserSummary(userId)));
+    }
+
     @PutMapping("/users/{userId}/role")
     public ResponseEntity<ApiResponse<UserSummaryResponse>> updateUserRole(
             @PathVariable Long userId,

@@ -47,7 +47,15 @@ public class KnowledgeBaseController {
                 new ApiResponse<>(true, "Knowledge base entry fetched", knowledgeBaseService.getEntry(id)));
     }
 
+    @GetMapping("/search")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('OFFICER')")
+    public ResponseEntity<ApiResponse<List<KnowledgeBaseEntry>>> searchEntries(@RequestParam String q) {
+        return ResponseEntity.ok(
+                new ApiResponse<>(true, "Knowledge base entries searched", knowledgeBaseService.search(q)));
+    }
+
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<KnowledgeBaseEntry>> createEntry(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody KnowledgeBaseEntryRequest request) {
@@ -57,6 +65,7 @@ public class KnowledgeBaseController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<KnowledgeBaseEntry>> updateEntry(
             @PathVariable Long id,
             @Valid @RequestBody KnowledgeBaseEntryRequest request) {
@@ -65,6 +74,7 @@ public class KnowledgeBaseController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Object>> deleteEntry(@PathVariable Long id) {
         knowledgeBaseService.delete(id);
         return ResponseEntity.ok(new ApiResponse<>(true, "Knowledge base entry deleted", null));

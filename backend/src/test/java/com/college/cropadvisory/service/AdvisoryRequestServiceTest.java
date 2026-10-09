@@ -4,6 +4,10 @@ import com.college.cropadvisory.exception.ForbiddenException;
 import com.college.cropadvisory.exception.NotFoundException;
 import com.college.cropadvisory.model.entity.*;
 import com.college.cropadvisory.repository.AdvisoryRequestRepository;
+import com.college.cropadvisory.repository.SoilReadingRepository;
+import com.college.cropadvisory.client.MlServiceClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,6 +41,15 @@ class AdvisoryRequestServiceTest {
 
     @Mock
     private FarmService farmService;
+
+    @Mock
+    private SoilReadingRepository soilReadingRepository;
+
+    @Mock
+    private MlServiceClient mlServiceClient;
+
+    @Mock
+    private ObjectMapper objectMapper;
 
     @InjectMocks
     private AdvisoryRequestService advisoryRequestService;
@@ -360,5 +373,33 @@ class AdvisoryRequestServiceTest {
 
         assertTrue(ex.getMessage().contains("Only PENDING or ASSIGNED"));
         verify(advisoryRequestRepository, never()).save(any());
+    }
+
+    // ─── suggestCrop ───────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("suggestCrop – success: officer gets and saves AI suggestion")
+    void suggestCrop_success() throws Exception {
+        SoilReading reading = new SoilReading();
+        when(advisoryRequestRepository.findById(101L)).thenReturn(Optional.of(assignedRequest));
+        when(soilReadingRepository.findByFarmOrderByRecordedAtDesc(farm)).thenReturn(List.of(reading));
+        Map<String, Object> suggestion = Map.of("recommendations", List.of("rice"));
+        when(mlServiceClient.getSuggestions(reading)).thenReturn(suggestion);
+        when(objectMapper.writeValueAsString(any())).thenReturn("[\"rice\"]");
+        when(advisoryRequestRepository.save(any(AdvisoryRequest.class))).thenAnswer(i -> i.getArgument(0));
+
+        AdvisoryRequest result = advisoryRequestService.suggestCrop(101L, officer);
+
+        assertEquals("[\"rice\"]", result.getAiSuggestion());
+        verify(advisoryRequestRepository).save(assignedRequest);
+    }
+
+    @Test
+    @DisplayName("suggestCrop – fail: no soil readings")
+    void suggestCrop_noReadings() {
+        when(advisoryRequestRepository.findById(101L)).thenReturn(Optional.of(assignedRequest));
+        when(soilReadingRepository.findByFarmOrderByRecordedAtDesc(farm)).thenReturn(List.of());
+
+        assertThrows(RuntimeException.class, () -> advisoryRequestService.suggestCrop(101L, officer));
     }
 }

@@ -12,6 +12,8 @@ public interface KnowledgeBaseEntryRepository extends JpaRepository<KnowledgeBas
 
     List<KnowledgeBaseEntry> findAllByOrderByCropOrDiseaseNameAsc();
 
+    List<KnowledgeBaseEntry> findByCropOrDiseaseNameContainingIgnoreCase(String query);
+
     /**
      * Case-insensitive duplicate-name check.
      *

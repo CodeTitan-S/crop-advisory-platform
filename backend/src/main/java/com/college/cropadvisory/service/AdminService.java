@@ -62,6 +62,11 @@ public class AdminService {
                 .toList();
     }
 
+    public UserSummaryResponse getUserSummary(Long userId) {
+        User user = getUser(userId);
+        return UserSummaryResponse.of(user, farmRepository.countByUser(user));
+    }
+
     public UserSummaryResponse updateUserRole(User actingAdmin, Long userId, String role) {
         User target = getUser(userId);
         Role newRole = parseRole(role);

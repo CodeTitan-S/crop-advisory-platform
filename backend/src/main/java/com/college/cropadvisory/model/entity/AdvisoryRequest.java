@@ -30,6 +30,9 @@ public class AdvisoryRequest {
     @Column(columnDefinition = "TEXT")
     private String responseText; // officer's reply (added for the workflow)
 
+    @Column(columnDefinition = "TEXT")
+    private String aiSuggestion; // stores AI suggestion as JSON
+
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 

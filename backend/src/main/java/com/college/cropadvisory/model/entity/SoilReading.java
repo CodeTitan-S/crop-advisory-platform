@@ -39,6 +39,9 @@ public class SoilReading {
     private Double temperature;
 
     @Column(nullable = false)
+    private Double humidity;
+
+    @Column(nullable = false)
     private LocalDateTime recordedAt = LocalDateTime.now();
 
     @JsonIgnore
