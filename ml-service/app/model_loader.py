@@ -1,8 +1,21 @@
 import joblib
 import os
 
-MODEL_PATH = os.path.join(os.path.dirname(__file__), '..', 'model', 'crop_model.pkl')
-ENCODER_PATH = os.path.join(os.path.dirname(__file__), '..', 'model', 'label_encoder.pkl')
+
+def _model_dir():
+    """Locate the directory holding crop_model.pkl and label_encoder.pkl.
+
+    On Render the model files are mounted as a Secret File at /etc/secrets/model/
+    (the repo does not ship the *.pkl files — see .gitignore). Locally they live
+    in ../../model relative to this module. RENDER env var is Render's standard
+   """
+    secrets_dir = "/etc/secrets/model"
+    if os.path.isdir(secrets_dir):
+        return secrets_dir
+    return os.path.join(os.path.dirname(__file__), "..", "model")
+
+MODEL_PATH = os.path.join(_model_dir(), "crop_model.pkl")
+ENCODER_PATH = os.path.join(_model_dir(), "label_encoder.pkl")
 
 model = joblib.load(MODEL_PATH)
 encoder = joblib.load(ENCODER_PATH)

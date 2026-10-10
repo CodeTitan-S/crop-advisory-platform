@@ -25,7 +25,12 @@ build/
 # Machine Learning / Jupyter
 .ipynb_checkpoints
 *.h5
+# Trained model artifacts: ignored everywhere except the ml-service model dir,
+# which the ML service image needs baked in at deploy time (*.pkl was previously
+# ignored wholesale, so the files never reached Render and uvicorn crashed on
+# import with FileNotFoundError — see model_loader.py).
 *.pkl
+!ml-service/model/*.pkl
 *.pt
 *.onnx
 
@@ -42,3 +47,6 @@ Thumbs.db
 .idea/
 *.iml
 .vscode/
+
+# Test results
+backend/test_results.txt
