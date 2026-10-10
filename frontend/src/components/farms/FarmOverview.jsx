@@ -1,11 +1,10 @@
 import { useParams } from 'react-router-dom';
 import { getFarm } from '../../api/farmService';
 import useFetch from '../../hooks/useFetch';
-import getErrorMessage from '../../utils/errorMessage';
 
 export default function FarmOverview() {
   const { farmId } = useParams();
-  const { data, loading, error, refetch } = useFetch(
+  const { data, loading, error } = useFetch(
     () => getFarm(farmId),
     [farmId],
     'Failed to load farm details'

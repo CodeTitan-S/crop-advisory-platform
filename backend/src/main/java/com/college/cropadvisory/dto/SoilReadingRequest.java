@@ -17,4 +17,5 @@ public class SoilReadingRequest {
     private Double rainfall;
     @NotNull
     private Double temperature;
+    private Double humidity;
 }

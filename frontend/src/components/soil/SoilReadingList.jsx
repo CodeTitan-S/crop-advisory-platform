@@ -40,6 +40,7 @@ export default function SoilReadingList() {
                 <th className="py-2 px-4 border">pH</th>
                 <th className="py-2 px-4 border">Rainfall (mm)</th>
                 <th className="py-2 px-4 border">Temp (°C)</th>
+                <th className="py-2 px-4 border">Humidity (%)</th>
               </tr>
             </thead>
             <tbody>
@@ -52,6 +53,7 @@ export default function SoilReadingList() {
                   <td className="py-2 px-4 border">{r.ph}</td>
                   <td className="py-2 px-4 border">{r.rainfall}</td>
                   <td className="py-2 px-4 border">{r.temperature}</td>
+                  <td className="py-2 px-4 border">{r.humidity ?? '—'}</td>
                 </tr>
               ))}
             </tbody>

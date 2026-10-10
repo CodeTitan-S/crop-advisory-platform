@@ -18,7 +18,7 @@ public class DataSourceConfig {
 
     private static final Logger log = LoggerFactory.getLogger(DataSourceConfig.class);
 
-    @Value("${spring.datasource.url:${DB_URL:${SPRING_DATASOURCE_URL:${DATABASE_URL:jdbc:postgresql://localhost:5432/crop_advisory}}}}")
+    @Value("${DATABASE_URL:${DB_URL:${spring.datasource.url:${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/crop_advisory}}}}")
     private String rawUrl;
 
     @Value("${spring.datasource.username:${DB_USER:${SPRING_DATASOURCE_USERNAME:postgres}}}")

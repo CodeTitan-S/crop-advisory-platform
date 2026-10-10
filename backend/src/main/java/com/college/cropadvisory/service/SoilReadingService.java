@@ -27,6 +27,7 @@ public class SoilReadingService {
         reading.setPh(request.getPh());
         reading.setRainfall(request.getRainfall());
         reading.setTemperature(request.getTemperature());
+        reading.setHumidity(request.getHumidity() != null ? request.getHumidity() : 0.0);
         reading.setRecordedAt(LocalDateTime.now());
         return soilReadingRepository.save(reading);
     }

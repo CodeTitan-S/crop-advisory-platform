@@ -12,6 +12,7 @@ export default function SoilReadingForm() {
     ph: '',
     rainfall: '',
     temperature: '',
+    humidity: '',
   });
   const [error, setError] = useState('');
 
@@ -45,6 +46,7 @@ export default function SoilReadingForm() {
     { label: 'pH', name: 'ph' },
     { label: 'Rainfall (mm)', name: 'rainfall' },
     { label: 'Temperature (°C)', name: 'temperature' },
+    { label: 'Humidity (%)', name: 'humidity' },
   ];
 
   return (
